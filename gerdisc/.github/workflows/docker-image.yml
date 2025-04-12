@@ -1,0 +1,35 @@
+name: Docker Compose CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  postgresPort: 5434
+  PostgresServer: postgres
+  PostgresUser: postgres
+  PostgresPassword: ${{ secrets.PostgresPassword }}
+  PostgresDb: gerdisc
+  SingInKey: ${{ secrets.SingInKey }}
+  EmailSettings__SmtpServer: "smtp.office365.com"
+  EmailSettings__SmtpPort: 587
+  EmailSettings__Username: ${{ secrets.EmailUsername }}
+  EmailSettings__Password: ${{ secrets.EmailPassword }}
+  EmailSettings__SenderEmail: ${{ secrets.EmailSender }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Build and push Docker Compose services
+      run: |
+        pwd
+        docker-compose build
+        echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login --username radhanama --password-stdin
+        docker-compose push

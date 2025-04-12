@@ -1,0 +1,102 @@
+.table {
+  display: flex;
+  color: #004AAD;
+  align-content: center;
+  flex-wrap: wrap;
+  flex-direction: row;
+  justify-content: center;
+  overflow-y: scroll;
+  thead,
+  th {
+    font-size: large;
+    font-weight: bold;
+    text-decoration: solid;
+    text-transform: uppercase;
+  }
+
+  tbody {
+    tr {
+      border: 2px solid #004AAD;
+      border-width: 0 0 1px 0;
+    }
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    text-align: center;
+    padding: 0.5rem;
+    text-align: center;
+    text-overflow: ellipsis;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: row;
+    padding: 1rem;
+    align-items: center;
+    justify-content: space-around;
+
+    .option {
+      margin: 0.5rem;
+      cursor: pointer;
+    }
+  }
+
+  tr:nth-child(even) {
+    background-color: #84c2df4c;
+  }
+
+  @media (max-width: 700px) {
+
+    .table{
+      overflow-y: hidden;
+    }
+    table,
+    thead,
+    tbody,
+    th,
+    td,
+    tr {
+      display: flex;
+      flex-direction: column;
+    }
+
+    thead tr {
+      display: none;
+    }
+
+    tr {
+      display: flex;
+      flex-direction: column;
+      flex:1;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+      width: max-content;
+    }
+
+    td {
+      display: flex;
+      flex: 1;
+      justify-content:space-between;
+      align-items: center;
+      flex-direction: row;
+      border: none;
+      width: 90%;
+      border-bottom: 1px solid #004AAD;
+      text-align: right;
+    }
+
+    td:before {
+      content: attr(data-label);
+      padding: 0.5rem;
+      white-space: nowrap;
+      margin-right: 1rem;
+      font-weight: bold;
+    }
+  }
+}

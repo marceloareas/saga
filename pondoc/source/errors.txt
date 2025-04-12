@@ -1,0 +1,60 @@
+############# Periodics #############
+
+Number of citations: 125
+Number of errors: 0
+Citation with error percentage: 0.0%
+
+
+############# Publications #############
+
+PACHECO, C. ; GARCIA, A. ; Machado, R.C.S. ; SALLES, RONALDO.  Sistemas fuzzy complementam a detecção de socialbots por aprendizado de máquina. CT . REVISTA MILITAR DE CIÊNCIA E TECNOLOGIA. 2018. B5 (C&T. REVISTA MILITAR DE CIÊNCIA E TECNOLOGIA).
+
+
+BENTO, L. ; Machado, R.C.S. ; BOCCARDO, DAVIDSON ; Vinícius G. P. de Sá ; SZWARCFITER, J..  Full characterization of a class of graphs tailored for software watermarking . ALGORITHMICA. 2019. B1.
+
+
+AKBARI, S. ; FRANÇA, F.A.M. ; GHASEMIAN, E. ; JAVARSINEH, M. ; de Lima, L.S..  The main eigenvalues of signed graphs . LINEAR ALGEBRA AND ITS APPLICATIONS. 2020. B1.
+
+
+ALENCAR, JORGE ; de Lima, Leonardo.  On graphs with adjacency and signless Laplacian matrices eigenvectors entries in {#8722;1,+1} . LINEAR ALGEBRA AND ITS APPLICATIONS. 2020. B1.
+
+
+NOVANTA, ANDERSON FERNANDES ; de Lima, Leonardo ; Oliveira, Carla Silva.  Q-integral graphs with at most two vertices of degree greater than or equal to three . LINEAR ALGEBRA AND ITS APPLICATIONS. 2020. B1.
+
+
+PACHECO, D. J. ; DE LIMA, L. S. ; OLIVEIRA, C..  On the Graovac-Ghorbani Index for Bicyclic Graphs with No Pendant Vertices . MATCH-COMMUNICATIONS IN MATHEMATICAL AND IN COMPUTER CHEMISTRY. 2020. B1.
+
+
+SA, F. P. G. ; OGASAWARA, E. ; COUTINHO, RAFAELLI ; BRANDAO, D. ; TOSO, R. F..  Wind Turbine Fault Detection: A Semi-Supervised Learning Approach With Two Different Dimensionality Reduction Techniques . International Journal of Innovative Computing and Applications (Online). 2021. B4 (INTERNATIONAL JOURNAL OF INNOVATIVE COMPUTING AND APPLI).
+
+
+Climaco, G. ; Simonetti, L. ; ROSSETI, I. ; González, P.H..  New approaches for the Prize-Collecting Covering Tour problem . International Journal of Industrial and Systems Engineering (Print). 2022. B1 (INTERNATIONAL JOURNAL OF INDUSTRIAL AND SYSTEMS ENGINEER).
+
+
+COUTINHO, R. ; BRANDAO, D. ; OGASAWARA, E. ; SA, F. P. G. ; TOSO, R. F..  Wind Turbine Fault Detection: A Semi-Supervised Learning Approach With Two Different Dimensionality Reduction Techniques . International Journal of Innovative Computing and Applications (Online). 2022. B4 (INTERNATIONAL JOURNAL OF INNOVATIVE COMPUTING AND APPLI).
+
+
+GOMES JUNIOR, S. P. ; SOUZA FILHO, J. B. O. E. ; HENRIQUES, F. R. ; TCHEOU, M. P..  INTELLIGENT DETECTION OF ARRHYTHMIA EPISODES IN DIALYSIS PATIENTS . LEARNING AND NONLINEAR MODELS. 2022. B3.
+
+
+CARVALHO, F. ; PASCHOAL JÚNIOR, F. ; OGASAWARA, E. ; FERRARI, L. V. ; SILVA, G. P. G. E..  Evaluation of the Brazilian Portuguese version of Linguistic Inquiry and Word Count 2015 (BP-LIWC2015) . Language Resources and Evaluation. 2023. A2 (LANGUAGE RESOURCES AND EVALUATION).
+
+
+Number of citations: 11
+Number of errors: 11
+Citation with error percentage: 100.0%
+
+
+############# Conferences #############
+
+PINNA, DANIELLE ; HAMACHER, RODRIGO ; SÁ, FERNANDO DE ; OLIVEIRA, SANDERSON L. GONZAGA DE ; GUERRA, RAPHAEL ; BELLOZE, KELE ; BRANDÃO, DIEGO.  Estudo sobre Modelos de Aprendizado de Máquina para Detecção de Falhas em Turbinas Eólicas. In: . v. 10 n. 1 (2023): CNMAC 2023, 2023, Bonito, 2023, 0. Não identificado ().
+
+
+PINNA, DANIELLE ; HAMACHER, RODRIGO ; SÁ, FERNANDO DE ; OLIVEIRA, SANDERSON L. GONZAGA DE ; GUERRA, RAPHAEL ; BELLOZE, KELE ; BRANDÃO, DIEGO.  Estudo sobre Modelos de Aprendizado de Máquina para Detecção de Falhas em Turbinas Eólicas. In: . v. 10 n. 1 (2023): CNMAC 2023, 2023, Bonito, 2023, 0. Não identificado ().
+
+
+Number of citations: 204
+Number of errors: 2
+Citation with error percentage: 0.9803921568627451%
+
+

@@ -1,0 +1,20 @@
+.empty-entity-message {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-direction: column;
+  }
+  
+  .empty-entity-message-text {
+    font-size: 24px;
+    text-align: center;
+    align-self: center;
+    justify-self: center;
+    width: 50%;
+    padding: 20px;
+    background-color: #f2f2f2;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 5rem;
+  }
+  

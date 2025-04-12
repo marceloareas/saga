@@ -1,0 +1,39 @@
+@import './variables.scss';
+.home {
+    .dashboard {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        align-items: center;
+        margin: 2rem;
+    }
+    .boardItem {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        
+    }
+    .boardItem:hover{
+        transform: scale(1.07);
+        font-weight: 500;
+        background-color: rgb(237, 252, 252);
+        border-radius: 10px;
+    }
+    #pre{
+        word-wrap: break-word;
+    }
+    .itemIcon img{
+        color: #004AAD;
+        height: auto;
+        margin: 1rem;
+    }
+    .boardItem .filtered{
+        width: 9rem;
+        height: 9rem;
+        filter: $filter
+    }
+
+}

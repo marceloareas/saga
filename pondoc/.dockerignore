@@ -1,0 +1,8 @@
+# folders
+**/venv
+**/docs
+**/__pycache__
+**/scripts
+
+# files types
+**.md

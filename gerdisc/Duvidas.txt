@@ -1,0 +1,17 @@
+> Exemplos de planilhas de inserção de usuarios
+> Exemplos de planilhas de  inserção em materias cursadas por estudantes
+> Prazo de defesa e qualificação
+> Atualização em cascata : Deleção de professor de um projeto resulta em que?
+> Senhas inicias de usuarios
+> Alunos pode alterar alguma informação dele?
+> Limite de acceso de orientador externo
+> para dissertações correntes, o que acontece se um professor é retirado do projeto
+> 
+
+
+## TAREFAS
+> CRUD de linha de pesquisa
+> prioridade em CR de entidades por CSV
+> criação de tela de entradas de csv
+> Criação de dissertação atraves de estudantes
+> Prioridade em gerencia de  prazos

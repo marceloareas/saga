@@ -1,0 +1,70 @@
+@import './variables.scss';
+.form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2rem;
+    flex-direction: column;
+    padding: 1rem;
+    flex: 1;
+    margin-top: 0.1rem;
+    border: 0.2rem solid $primary-color;
+    flex-wrap: wrap;
+    border-radius: 1rem;
+
+    .form-section {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        width: 70%;
+
+        .formInput {
+            padding: 0.5rem;
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+
+            label {
+                margin-bottom: 0.3rem;
+            }
+
+            input,
+            select,
+            textarea {
+                border-radius: 1rem;
+                height: 2rem;
+                border: 1px solid #004AAD;
+                color: #004AAD;
+                font-size: medium;
+                padding: 0.4rem;
+            }
+
+            select{
+                width: 100%;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+
+            input[type="submit"] {
+                background-color: #004AAD;
+                color: white;
+
+                :hover {
+                    background-color: #022553;
+                }
+            }
+        }
+    }
+    @media(max-width:500px) {
+        .form-section
+        {
+            .formInput{
+                align-items: flex-start;
+                justify-content: flex-start;
+                max-width: 80vw;
+            }
+        }
+    }
+}

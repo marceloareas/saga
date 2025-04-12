@@ -1,0 +1,70 @@
+# .NET Core and Visual Studio default folders
+bin/
+obj/
+.vs/
+/Properties/launchSettings.json
+
+# NuGet
+*.nuget.props
+*.nuget.targets
+packages/
+*.nupkg
+**/node_modules/
+*.cache
+
+# MSTest test Results
+TestResults/
+
+# Visual Studio files
+*.user
+*.suo
+*.sln.docstates
+*.vspscc
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+[Bb]in/
+[Ll]og/
+*_i.c
+*_p.c
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+*.psess
+*.vsp
+*.psess
+*.pubxml
+*.publishproj
+*.cache
+*.cache.cs
+*.userprefs
+*.cssl
+*.csproj.user
+*.csproj.dotsettings
+*.user
+
+# Resharper files
+_ReSharper*/
+*.resharper
+*.DotSettings.user
+
+# enviroment
+.env

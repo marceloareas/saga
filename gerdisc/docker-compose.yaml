@@ -1,0 +1,71 @@
+
+services:
+  postgres:
+    image: postgres:10.17
+    restart: always
+    environment:
+      POSTGRES_USER: ${PostgresUser}
+      POSTGRES_PASSWORD: ${PostgresPassword}
+      POSTGRES_DB: ${PostgresDb}
+    ports:
+      - "${postgresPort}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PostgresUser} -d ${PostgresDb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  saga:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - postgresPort=${postgresPort}
+      - PostgresServer=${PostgresServer}
+      - PostgresUser=${PostgresUser}
+      - PostgresPassword=${PostgresPassword}
+      - PostgresDb=${PostgresDb}
+      - SinginKey=${SinginKey}
+      - EmailSettings__SmtpServer=${EmailSettings__SmtpServer}
+      - EmailSettings__SmtpPort=${EmailSettings__SmtpPort}
+      - EmailSettings__Username=${EmailSettings__Username}
+      - EmailSettings__Password=${EmailSettings__Password}
+      - EmailSettings__SenderEmail=${EmailSettings__SenderEmail}
+    ports:
+      - "5000:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  database-updater:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.update
+    environment:
+      - postgresPort=${postgresPort}
+      - PostgresServer=${PostgresServer}
+      - PostgresUser=${PostgresUser}
+      - PostgresPassword=${PostgresPassword}
+      - PostgresDb=${PostgresDb}
+      - SinginKey=${SinginKey}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    environment:
+      - REACT_APP_BASE_URL=${REACT_APP_BASE_URL}
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./front:/usr/src/app:delegated
+      - /usr/src/app/node_modules
+
+
+volumes:
+  db_data:

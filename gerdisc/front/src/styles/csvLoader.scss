@@ -1,0 +1,43 @@
+@import './variables.scss';
+
+.csv-loader {
+    .form {
+        .form-section {
+            min-width: 50%;
+            justify-content: center;
+            align-items: center;
+
+            .formInput {
+                flex: 0.5;
+                width: 100%;
+                padding: 0.2rem;
+            }
+        }
+    }
+
+    .reader {
+        display: flex;
+        flex: 1;
+        justify-content: center;
+        align-items: center;
+
+        input {
+            display: none;
+        }
+
+        .file-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 1rem;
+            color: white;
+            height: 1.5rem;
+            text-align: center;
+            width: 100%;
+            background-color: $primary-color;
+            font: $font-family;
+            cursor: pointer;
+        }
+    }
+}

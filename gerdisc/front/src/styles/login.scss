@@ -1,0 +1,214 @@
+.login {
+  .header {
+    display: flex;
+    padding: 1.5rem;
+    background-color: rgb(250, 245, 245);
+    height: auto;
+    color: rgb(1, 17, 63);
+    align-content: center;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Adicionando sombra suave */
+  }
+
+  .headerOptions {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    color: rgb(1, 17, 63);
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(90deg, rgb(0, 25, 250), rgb(0, 242, 250));
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .form {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-self: center;
+    height: auto;
+    margin-top: 15vh;
+    margin-bottom: 10vh;
+    border: 0.2rem solid white;
+    border-radius: 1rem;
+    padding: 2rem;
+    background-color: rgba(255, 255, 255, 0.1); /* Fundo leve */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra suave */
+  }
+
+  .form input[type="text"], .form input[type="password"] {
+    border-radius: 1rem;
+    border: 0.1rem solid #fff;
+    height: 2.5rem;
+    padding: 1rem;
+    width: 60vw;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    background-color: transparent; 
+    color: white; 
+    transition: border 0.3s ease, background-color 0.3s ease, color 0.3s ease; 
+  }
+
+  .form input[type="text"]:focus, .form input[type="password"]:focus {
+    border: 0.1rem solid rgb(0, 25, 250); 
+    outline: none;
+    background-color: white; 
+    color: rgb(0, 25, 250); 
+  }
+
+  .form p {
+    font-weight: 300;
+    align-self: left;
+    margin-bottom: 2rem;
+    font-size: 1.25rem;
+    color: white;
+  }
+
+  .form input[type="submit"] {
+    margin-top: 1rem;
+    background-color: rgb(2, 5, 49);
+    padding: 0.75rem;
+    border: none;
+    border-radius: 1rem;
+    width: 10rem;
+    color: white;
+    font-weight: bolder;
+    align-self: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .form input[type="submit"]:hover {
+    background-color: rgb(1, 66, 150);
+  }
+
+  #forgotPassword {
+    background: none;
+    border: none;
+    color: rgb(3, 3, 177);
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: underline;
+    margin-top: 1rem;
+  }
+  #forgotPassword:hover{
+    color: rgb(25, 25, 247);
+  }
+
+  .title-login{
+    font-weight: 700;
+    font-size: large;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(50px);
+      opacity: 0.5;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  .form {
+    animation: slideUp 0.6s ease-out; 
+  }
+
+  .form label {
+    font-size: 1rem;
+    color: white;
+    align-self: flex-start; 
+    margin-bottom: 0.5rem;
+  }
+  
+  
+}
+
+.modal {
+  .modal {
+    display: flex;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .modal-content {
+    background-color: rgb(250, 245, 245);
+    border-radius: 0.3rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    width: 30rem;
+  }
+
+  .modal-content p {
+    font-weight: normal;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .modal-content label {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .modal-content input[type="text"] {
+    border-radius: 1rem;
+    border: 0.2rem solid rgb(0, 15, 155);
+    height: 2.5rem;
+    padding: 1rem;
+    width: 20rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+
+  .modal-content input[type="submit"] {
+    margin-top: 1rem;
+    background-color: rgb(2, 5, 49);
+    padding: 0.75rem;
+    border: none;
+    border-radius: 1rem;
+    width: 10rem;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .modal-content input[type="submit"]:hover {
+    background-color: rgb(0, 74, 173);
+  }
+
+  .close {
+    color: rgb(1, 17, 63);
+    font-size: 2rem;
+    font-weight: bold;
+    position: absolute;
+    right: 1rem;
+    top: 0.5rem;
+    cursor: pointer;
+  }
+}

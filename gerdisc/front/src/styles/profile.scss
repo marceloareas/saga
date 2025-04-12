@@ -1,0 +1,89 @@
+@import "./variables.scss";
+
+.card-label {
+    align-self: center;
+    text-decoration: solid;
+    font-size: larger;
+    font-weight: bolder;
+}
+
+.bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+
+    input {
+        cursor: pointer;
+    }
+
+    .options {
+        padding: 1rem;
+
+        .option {
+            margin: 0.5rem 1rem;
+            padding: 0.7rem;
+            border-radius: 1rem;
+            color: white;
+            background-color: #004AAD;
+        }
+    }
+}
+
+.studentCard {
+    text-align: center;
+    border: 1px solid #004AAD;
+    border-radius: 1rem;
+    margin: 1rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    width: 50vw;
+    align-self: center;
+    justify-self: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .p {
+        padding: 0.5rem;
+        text-align: center;
+    }
+    p:before{
+        content: attr(data-label);
+        padding: 0.5rem;
+        white-space: nowrap;
+        margin-right: 1rem;
+        font-weight: bold;
+    }
+}
+@media (max-width: 800px) {
+    .studentCard {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    width: 90vw;
+    justify-content: flex-start;
+    align-items: center;
+    :last-child{
+        border: none;
+    }
+    p{
+        display: flex;
+        flex: 1;
+        border-collapse: collapse;
+        border-bottom: 1px solid $primary-color;
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: right;
+    }
+    p:before{
+        content: attr(data-label);
+        padding: 0.5rem;
+        white-space: nowrap;
+        margin-right: 1rem;
+        font-weight: bold;
+    }
+    }
+}
