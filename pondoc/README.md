@@ -8,6 +8,8 @@ O Pondoc é uma ferramenta para produção de relatório em excel para analise d
 
 Após a execução do Docker Compose, é possível verificar as telas da aplicação consultando a URL `http://localhost:3000/`. 
 
+não funciona consultar a url após rodar o rocket no github workspace, eu (pedrojaoulack) tentei e não funcionou :( 
+
 ## Shutdown de containers
 Para interromper o container criado no Docker Compose, siga as etapas seguintes:
 1. No terminal ou prompt de comando, mude o diretório de trabalho para o diretório onde está a pasta `\saga\gerdisc`.
