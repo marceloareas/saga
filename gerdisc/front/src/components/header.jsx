@@ -16,7 +16,6 @@ export default function Header({ name }) {
                 </div>
             </div>
             <div className={"headerBreak"}><span></span></div>
-            <br></br>
         </>
     );
 }
