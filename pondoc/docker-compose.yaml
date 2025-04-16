@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 
 services:
     python:
@@ -6,7 +6,6 @@ services:
             dockerfile: ./Dockerfile
         working_dir: /app
         command: python3 -m flask --app app/app.py run --host=0.0.0.0 --debug
-        
         depends_on:
             - postgres
         volumes: 
@@ -18,7 +17,14 @@ services:
         networks: 
             - python-network
             - postgres-network
-    
+        deploy:
+            resources:
+                limits:
+                    cpus: "1.0"
+                    memory: 512M
+                reservations:
+                    memory: 128M
+
     # cron:
     #     build:
     #         context: .
@@ -32,11 +38,19 @@ services:
     #     networks:
     #         - cron-network
     #         - postgres-network
+    #     deploy:  # Adicione deploy ao cron se for usá-lo
+    #         resources:
+    #             limits:
+    #                 cpus: "0.5"
+    #                 memory: 256M
+    #             reservations:
+    #                 memory: 64M
+
 
     postgres:
         image: postgres:alpine
         volumes:
-            - postgres-volume:/var/lib/posgresql/data
+            - postgres-volume:/var/lib/postgresql/data
         environment:
             POSTGRES_USER: ${POSTGRES_USER}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -45,6 +59,14 @@ services:
             - 5433:5432
         networks:
             - postgres-network
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.5"
+                    memory: 256M
+                reservations:
+                    memory: 64M
+
     # pgadmin:
     #     image: dpage/pgadmin4
     #     environment:
@@ -57,7 +79,15 @@ services:
     #     networks:
     #         - pgadmin-network
     #         - postgres-network
- 
+    #     deploy: # Adicione deploy ao pgadmin se for usá-lo
+    #         resources:
+    #             limits:
+    #                 cpus: "0.25"
+    #                 memory: 128M
+    #             reservations:
+    #                 memory: 32M
+
+
 volumes:
     postgres-volume:
         driver: local
