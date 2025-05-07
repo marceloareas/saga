@@ -193,11 +193,12 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
         console.log('value', value);
 
         if (name === "cpf") {
-            const regex = /(\d{3})(\d{3})(\d{3})(\d{2})/;
-            const isValidFormat = regex.test(value);
+            const onlyNumbersRegex = /(\d{3})(\d{3})(\d{3})(\d{2})/;
+            const formattedRegex = /(\d{3}).(\d{3}).(\d{3})-(\d{2})/;
+            const isValidFormat = onlyNumbersRegex.test(value) || formattedRegex.test(value);
             const isValidValue = isCPFValido(value);
 
-            value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+            // value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
             const newIsCpfValid = isValidFormat && isValidValue;
             setIsCpfValid(newIsCpfValid);
         }
@@ -470,7 +471,7 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
                         </div>
                         <div className="form-section">
                             <div className="formInput">
-                                <input type="submit" disabled={!isCpfValid} 
+                                <input type="submit" disabled={!isUpdate && !isCpfValid} 
                                     value={isUpdate ? "Update" : "Submit"} 
                                     onClick={(e) => handleSave(e)} 
                                 />
