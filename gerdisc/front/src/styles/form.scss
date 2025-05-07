@@ -55,6 +55,13 @@
                     background-color: #022553;
                 }
             }
+
+            input[type="submit"]:disabled {
+                background-color: #c8c8c8;
+                border: 1px solid #f9f9f9;
+                color: rgb(0, 0, 0);
+                cursor: not-allowed;
+            }
         }
     }
     @media(max-width:500px) {

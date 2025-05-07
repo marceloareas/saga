@@ -13,6 +13,27 @@ import { AREA_ENUM, INSTITUTION_TYPE_ENUM, STATUS_ENUM, SCHOLARSHIP_TYPE } from 
 import MultiSelect from "../../components/Multiselect";
 import { translateEnumValue } from "../../enum_helpers";
 
+const isCPFValido = (strCPF) => {
+    let Soma;
+    let Resto;
+    Soma = 0;
+    if (strCPF == "00000000000") return false;
+
+    for (let i=1; i<=9; i++) Soma = Soma + parseInt(strCPF.substring(i-1, i)) * (11 - i);
+        Resto = (Soma * 10) % 11;
+
+    if ((Resto == 10) || (Resto == 11))  Resto = 0;
+    if (Resto != parseInt(strCPF.substring(9, 10)) ) return false;
+
+    Soma = 0;
+    for (let i = 1; i <= 10; i++) Soma = Soma + parseInt(strCPF.substring(i-1, i)) * (12 - i);
+    Resto = (Soma * 10) % 11;
+
+    if ((Resto == 10) || (Resto == 11))  Resto = 0;
+    if (Resto != parseInt(strCPF.substring(10, 11) ) ) return false;
+    return true;
+}
+
 
 export default function UserForm({ type = undefined, isUpdate = false }) {
     const navigate = useNavigate();
@@ -61,6 +82,8 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
         institution: '',
         projectId: '',
     });
+    const [isCpfValid, setIsCpfValid] = useState(false);
+
     const formatDateForInput = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -164,6 +187,21 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
     };
 
     const changeUserAtribute = (name, value) => {
+        console.log(name, value);
+        console.log(' ');
+        console.log('name', name);
+        console.log('value', value);
+
+        if (name === "cpf") {
+            const regex = /(\d{3})(\d{3})(\d{3})(\d{2})/;
+            const isValidFormat = regex.test(value);
+            const isValidValue = isCPFValido(value);
+
+            value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+            const newIsCpfValid = isValidFormat && isValidValue;
+            setIsCpfValid(newIsCpfValid);
+        }
+
         let newValue = {};
         newValue[name] = value;
         setUser({ ...user, ...newValue });
@@ -289,21 +327,38 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
                         <div className="form-section">
                             <div className="formInput">
                                 <label htmlFor="firstName">Primeiro Nome</label>
-                                <input required={true} type="text" name="firstName" value={user.firstName} onChange={(e) => changeUserAtribute(e.target.name, e.target.value)} id="firstName" />
+                                <input required={true} type="text" name="firstName" 
+                                    value={user.firstName} 
+                                    placeholder="entre com o primeiro nome"
+                                    onChange={(e) => changeUserAtribute(e.target.name, e.target.value)} id="firstName" 
+                                />
                             </div>
                             <div className="formInput">
                                 <label htmlFor="lastName">Sobrenome</label>
-                                <input required={true} type="text" name="lastName" id="lastName" value={user.lastName} onChange={(e) => changeUserAtribute(e.target.name, e.target.value)} />
+                                <input required={true} type="text" name="lastName" id="lastName" 
+                                    value={user.lastName} 
+                                    placeholder="entre com o sobrenome"
+                                    onChange={(e) => changeUserAtribute(e.target.name, e.target.value)} 
+                                />
                             </div>
                         </div>
                         <div className="form-section">
                             <div className="formInput">
                                 <label htmlFor="email">Email</label>
-                                <input required={true} type="email" name="email" id="email" value={user.email} onChange={(e) => changeUserAtribute(e.target.name, e.target.value)} />
+                                <input required={true} type="email" name="email" id="email" 
+                                    value={user.email} placeholder="entre com o email"
+                                    onChange={(e) => changeUserAtribute(e.target.name, e.target.value)} 
+                                />
                             </div>
                             <div className="formInput">
                                 <label htmlFor="cpf">CPF</label>
-                                <input required={true} disabled={isUpdate} type="text" name="cpf" value={user.cpf} id="cpf" onChange={(e) => changeUserAtribute(e.target.name, e.target.value)} />
+                                <input required={true} disabled={isUpdate}
+                                    type="text" name="cpf" value={user.cpf} id="cpf"
+                                    placeholder="entre com o CPF"
+                                    min={11} max={14}
+                                    pattern="\d{11}" 
+                                    onChange={(e) => changeUserAtribute(e.target.name, e.target.value)} 
+                                />
                             </div>
                         </div>
                         {userType === "Estudante" && (
@@ -311,7 +366,11 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
                                 <div className="form-section" id="registration-section">
                                     <div className="formInput">
                                         <label htmlFor="registration">Matricula</label>
-                                        <input required={true} disabled={isUpdate} type="text" name="registration" id="registration" value={student.registration} onChange={(e) => changeStudentAttribute(e.target.name, e.target.value)} />
+                                        <input required={true} disabled={isUpdate} type="text" name="registration" id="registration"
+                                            value={student.registration}
+                                            placeholder="entre com a matricula"
+                                            onChange={(e) => changeStudentAttribute(e.target.name, e.target.value)} 
+                                        />
                                     </div>
                                     <div className="formInput">
                                         <Select
@@ -338,11 +397,19 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
                                     <div className="form-section" id="qualification-section2">
                                         <div className="formInput">
                                             <label htmlFor="undergraduateInstitution">Institução de graduação</label>
-                                            <input required={true} minLength={3} type="text" name="undergraduateInstitution" value={student.undergraduateInstitution} id="undergraduateInstitution" onChange={(e) => changeStudentAttribute(e.target.name, e.target.value)} />
+                                            <input required={true} minLength={3} type="text" name="undergraduateInstitution" 
+                                                value={student.undergraduateInstitution} id="undergraduateInstitution"
+                                                placeholder="entre com a instituição de graduação" 
+                                                onChange={(e) => changeStudentAttribute(e.target.name, e.target.value)} 
+                                            />
                                         </div>
                                         <div className="formInput">
                                             <label htmlFor="undergraduateCourse">Curso</label>
-                                            <input required={true} type="text" name="undergraduateCourse" id="undergraduateCourse" value={student.undergraduateCourse} onChange={(e) => changeStudentAttribute(e.target.name, e.target.value)} />
+                                            <input required={true} type="text" name="undergraduateCourse" id="undergraduateCourse" 
+                                                value={student.undergraduateCourse} 
+                                                placeholder="entre com o curso" 
+                                                onChange={(e) => changeStudentAttribute(e.target.name, e.target.value)} 
+                                            />
                                         </div>
                                         <div className="formInput">
                                             <Select
@@ -403,7 +470,10 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
                         </div>
                         <div className="form-section">
                             <div className="formInput">
-                                <input type="submit" value={isUpdate ? "Update" : "Submit"} onClick={(e) => handleSave(e)} />
+                                <input type="submit" disabled={!isCpfValid} 
+                                    value={isUpdate ? "Update" : "Submit"} 
+                                    onClick={(e) => handleSave(e)} 
+                                />
                             </div>
                         </div>
                     </form>
