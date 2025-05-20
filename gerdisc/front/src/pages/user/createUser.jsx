@@ -187,11 +187,6 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
     };
 
     const changeUserAtribute = (name, value) => {
-        console.log(name, value);
-        console.log(' ');
-        console.log('name', name);
-        console.log('value', value);
-
         if (name === "cpf") {
             const onlyNumbersRegex = /(\d{3})(\d{3})(\d{3})(\d{2})/;
             const formattedRegex = /(\d{3}).(\d{3}).(\d{3})-(\d{2})/;
@@ -283,7 +278,7 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
 
     const handleUpdate = () => {
         if (isStudent) {
-            let body = { ...user, ...student };
+            let body = { ...student, ...user };
             putStudentById(id, body)
                 .then((student) => {
                     navigate("/students");
