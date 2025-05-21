@@ -13,7 +13,7 @@ CORS(app)
 
 @app.route("/")
 def index():
-    return render_template('createReport.html', api_url=os.getenv('APP_PUBLIC_URL'))
+    return render_template('createReport.html', api_url=os.getenv('AppPubKey'))
 
 #TODO: Criar estrutura de dados
 @app.route("/createReport", methods=['POST'])
