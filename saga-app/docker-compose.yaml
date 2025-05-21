@@ -18,6 +18,33 @@ services:
       timeout: 5s
       retries: 5
 
+  python:
+        build:
+            dockerfile: ./pondoc/Dockerfile
+        working_dir: /app
+        command: python3 -m flask --app app/app.py run --host=0.0.0.0 --debug
+        depends_on:
+          postgres:
+            condition: service_healthy
+        volumes: 
+            - ./pondoc/source:/app
+        environment:
+            - PostgresPort=${postgresPort}
+            - PostgresServer=${PostgresServer}
+            - PostgresUser=${PostgresUser}
+            - PostgresPassword=${PostgresPassword}
+            - PostgresDb=${PostgresDb}
+            - AppPubKey=${APP_PUBLIC_URL}
+        ports:
+            - ${APP_PORT}:5000
+        deploy:
+            resources:
+                limits:
+                    cpus: "1.0"
+                    memory: 512M
+                reservations:
+                    memory: 128M
+
   saga:
     build:
       context: ./backend
@@ -74,6 +101,7 @@ services:
       - ./front:/usr/src/app:delegated
       - /usr/src/app/node_modules
 
-
 volumes:
-  db_data:
+    postgres-volume:
+        driver: local
+    db_data:
