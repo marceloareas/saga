@@ -33,6 +33,7 @@ export default function App() {
         <Route path="/changePassword" element={<ResetPassword />} />
         <Route path="/students/:id" element={<StudentProfile />} />
         <Route path="/students/:id/edit" element={<StudentUpdate/>} />
+        <Route path="/students/:id/delete" element={<StudentProfile />} />
         <Route path="/students" element={<StudentList />} />
         <Route path="/professors" element={<ProfessorList />} />
 

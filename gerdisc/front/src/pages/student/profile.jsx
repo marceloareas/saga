@@ -2,7 +2,7 @@ import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 import "../../styles/profile.scss";
 import { useNavigate } from "react-router";
-import { getStudentById } from "../../api/student_service";
+import { getStudentById, deleteStudent } from "../../api/student_service";
 import BackButton from "../../components/BackButton";
 import ErrorPage from "../../components/error/Error";
 import jwt_decode from "jwt-decode";
@@ -18,6 +18,12 @@ export default function StudentProfile() {
     const navigate = useNavigate()
     const [name,] = useState(localStorage.getItem('name'))
     const [isLoading, setIsLoading] = useState(true)
+
+    const handleStudentDelete = async () => {
+            deleteStudent(id)
+                .then((student) => navigate("/students"))
+                .catch(error => { setError('Unable to create student'); })
+    }
 
     useEffect(() => {
         const token = localStorage.getItem('token')
@@ -50,6 +56,7 @@ export default function StudentProfile() {
                         <input type={'button'} className="option" value={"Criar Dissertação"} onClick={(e) => navigate(`researches/add`)} />
                         <input type={'button'} className="option" value={'Prorrogação'} onClick={(e) => navigate('extensions/add')} />
                         <input type={'button'} className="option" value={'Editar Estudante'} onClick={(e) => navigate('edit')} />
+                        <input type={'button'} className="option" value={'Excluir Estudante'} onClick={handleStudentDelete} />
                     </div>}
                 </div>
                 {!isLoading && <>
