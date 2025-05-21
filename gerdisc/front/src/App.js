@@ -23,6 +23,7 @@ import StudentUpdate from './pages/student/studentUpdate';
 import ResearcherUpdate from './pages/researcher/researcherUpdate';
 import ProfessorUpdate from './pages/professor/professorUpdate';
 import StudentForm from './pages/student/CreateStudent';
+import ProfessorProfile from './pages/professor/professorProfile';
 
 export default function App() {
   return (
@@ -31,11 +32,16 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/changePassword" element={<ResetPassword />} />
+
+        <Route path="/students" element={<StudentList />} />
         <Route path="/students/:id" element={<StudentProfile />} />
         <Route path="/students/:id/edit" element={<StudentUpdate/>} />
-        <Route path="/students/:id/delete" element={<StudentProfile />} />
-        <Route path="/students" element={<StudentList />} />
+        <Route path="/students/add" element={<StudentForm />} />
+
         <Route path="/professors" element={<ProfessorList />} />
+        <Route path="/professors/:id" element={<ProfessorProfile/>} />
+        <Route path="/professors/:id/edit" element={<ProfessorUpdate />} />
+        <Route path="/professors/add" element={<UserForm type={"Professor"}/>} />
 
         <Route path="/researchLine" element={<ResearchLineList />} />
         <Route path="/researchLine/add" element={<CreateResearchLine />} />
@@ -48,10 +54,7 @@ export default function App() {
         <Route path="/user/add" element={<UserForm />} />
         <Route path="/entities/csv" element={<CsvLoader />} />
         <Route path="/students/:id/researches/add" element={<ResearchForm />} />
-        <Route path="/students/add" element={<StudentForm />} />
-        <Route path="/professors/add" element={<UserForm type={"Professor"}/>} />
         <Route path="/researches/add" element={<UserForm type={"Externo"}/>} />
-        <Route path="/professors/:id" element={<ProfessorUpdate/>} />
         <Route path="/researchers/:id" element={<ResearcherUpdate />} />
         <Route path="/projects/add" element={<ProjectForm />} />
         <Route path="/projects/:id" element={<ProjectForm Update={true} />} />

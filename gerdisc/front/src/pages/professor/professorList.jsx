@@ -5,8 +5,7 @@ import { getProfessors } from "../../api/professor_service"
 import { useNavigate } from "react-router"
 import jwt_decode from "jwt-decode";
 import BackButton from "../../components/BackButton";
-import PageContainer from "../../components/PageContainer";
-
+import PageContainer from "../../components/PageContainer"
 
 export default function ProfessorList() {
     const navigate = useNavigate()

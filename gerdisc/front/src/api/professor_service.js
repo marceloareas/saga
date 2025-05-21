@@ -8,6 +8,10 @@ export async function getProfessorById(id){
     return (await api.get(`professors/${id}`))?.data
 }
 
+export async function deleteProfessor(id){
+    return (await api.delete(`professors/${id}`))
+}
+
 export async function putProfessorById(id, data){
     return (await api.put(`professors/${id}`,data))?.data
 }
