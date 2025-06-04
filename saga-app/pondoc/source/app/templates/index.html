@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório</title>
+
+    <!-- XLSX -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100px;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .table-container {
+            max-height: 600px;
+            overflow: auto;
+            border: 1px solid #ccc;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: max-content;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f1f3f4;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        a.download-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a.download-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerar Relatório</h1>
+
+        <label for="beginYear">Ano Inicial:</label>
+        <input type="number" id="beginYear" value="2023">
+
+        <label for="endYear">Ano Final:</label>
+        <input type="number" id="endYear" value="2024">
+
+        <button onclick="generateReport()">Gerar Relatório</button>
+
+        <div class="table-container" id="table-container"></div>
+    </div>
+
+    <script>
+        function generateReport() {
+            const beginYear = document.getElementById('beginYear').value;
+            const endYear = document.getElementById('endYear').value;
+
+            fetch('/createReport', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ beginYear, endYear })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const filename = data.filename;
+                const url = '/download/' + filename;
+
+                fetch(url)
+                    .then(response => response.arrayBuffer())
+                    .then(data => {
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                        const table = document.createElement('table');
+
+                        json.forEach((row, rowIndex) => {
+                            const tr = document.createElement('tr');
+                            row.forEach(cell => {
+                                const cellElement = rowIndex === 0 
+                                    ? document.createElement('th') 
+                                    : document.createElement('td');
+                                cellElement.textContent = cell;
+                                tr.appendChild(cellElement);
+                            });
+                            table.appendChild(tr);
+                        });
+
+                        const container = document.getElementById('table-container');
+                        container.innerHTML = '';
+                        container.appendChild(table);
+
+                        // Download link
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = filename;
+                        link.textContent = "Download";
+                        link.className = "download-link";
+                        container.appendChild(link);
+                    });
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+    </script>
+</body>
+</html>
