@@ -1,4 +1,4 @@
-# Gerdisc
+# Gerdisc 
 
 ## Executar Docker Compose
 1. No terminal ou prompt de comando, mude o diretório de trabalho para o diretório onde está a pasta `\saga-app`.
