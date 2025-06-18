@@ -2,7 +2,7 @@
 
 ## Executar Docker Compose
 1. No terminal ou prompt de comando, mude o diretório de trabalho para o diretório onde está a pasta `\saga-app`.
-2. Verifique se o Docker App está rodando
+2. Verifique se o Docker App está rodando.
 3. Verifique a existência do arquivo `docker-compose.yaml`
 4. Execute o comando `docker-compose up -d`
 5. Ou execute o comando `docker compose --env-file .env up` para start os containers com as variáveis de .env
