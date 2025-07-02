@@ -69,6 +69,15 @@ namespace saga.Infrastructure.Repositories
         }
 
         /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> predicate,
             params Expression<Func<TEntity, object>>[] includeProperties)
@@ -80,11 +89,36 @@ namespace saga.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+                /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(predicate)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
         /// <inheritdoc />
         public async Task<IEnumerable<TEntity>> GetAllAsync(
             params Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>[] includeProperties)
         {
             IQueryable<TEntity> query = _dbSet.Where(e => !e.IsDeleted);
+
+            foreach (var includeProperty in includeProperties)
+            {
+                query = includeProperty(query);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            params Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>[] includeProperties)
+        {
+            IQueryable<TEntity> query = _dbSet;
 
             foreach (var includeProperty in includeProperties)
             {
@@ -127,6 +161,15 @@ namespace saga.Infrastructure.Repositories
         {
             return await _dbSet
                 .Where(e => !e.IsDeleted)
+                .Where(predicate)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
                 .Where(predicate)
                 .ToListAsync();
         }
@@ -213,6 +256,11 @@ namespace saga.Infrastructure.Repositories
                 .AsNoTracking()
                 .CountAsync(e => !e.IsDeleted && predicate.Compile()(e))
                 .ConfigureAwait(false);
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllUnfilteredAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }
