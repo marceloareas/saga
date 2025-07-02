@@ -17,19 +17,12 @@ namespace saga.Services.Interfaces
         Task<UserEntity> CreateUserAsync(UserDto userDto);
 
         /// <summary>
-        /// Authenticate user with provided email and password
-        /// </summary>
-        /// <param name="loginDto">The LoginDto object containing email and password information</param>
-        /// <returns>The generated JWT token</returns>
-        Task<LoginResultDto> AuthenticateAsync(LoginDto loginDto);
-
-        /// <summary>
         /// Requests a password reset for the user with the specified email.
         /// </summary>
         /// <param name="request">The request reset password data transfer object.</param>
         /// <returns>A task representing the asynchronous password reset request.</returns>
         /// <exception cref="ArgumentException">Thrown when the user with the specified email is not found.</exception>
-        Task ResetPasswordRequestAsync(RequestResetPasswordDto loginDto);
+        Task ResetPasswordRequestAsync(RequestResetPasswordDto request);
 
         /// <summary>
         /// Resets the password for the user with the specified email.
@@ -38,5 +31,15 @@ namespace saga.Services.Interfaces
         /// <returns>A task representing the asynchronous password reset operation.</returns>
         /// <exception cref="ArgumentException">Thrown when the user with the specified email is not found.</exception>
         Task<LoginResultDto> ResetPasswordAsync(ResetPasswordDto loginDto);
+
+        /// <summary>
+        /// Authenticate user with provided email and password
+        /// </summary>
+        /// <param name="loginDto">The LoginDto object containing email and password information</param>
+        /// <returns>The generated JWT token</returns>
+        Task<LoginResultDto> AuthenticateAsync(LoginDto loginDto);
+
+        
+        
     }
 }
