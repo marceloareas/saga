@@ -17,7 +17,7 @@ namespace saga.Models.Mapper
         public static ProfessorEntity ToEntity(this ProfessorDto self, Guid userId) =>
             self is null ? new ProfessorEntity() : new ProfessorEntity
             {
-                Id = userId,
+                Id = Guid.NewGuid(),
                 Siape = self.Siape,
                 UserId = userId,
             };
