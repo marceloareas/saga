@@ -60,15 +60,17 @@ namespace saga.Services
         /// <inheritdoc />
         public async Task<ProfessorInfoDto> UpdateProfessorAsync(Guid id, ProfessorDto professorDto)
         {
-            var existingProfessor = await _repository.Professor.GetByIdAsync(id, x => x.User);
-            if (existingProfessor == null)
-            {
-                throw new ArgumentException($"Professor with id {id} does not exist.");
-            }
+            var existingProfessor = await _repository
+                .Professor
+                .GetByIdAsync(id, x => x.User) ?? throw new ArgumentException($"Professor with id {id} does not exist.");
 
             existingProfessor = professorDto.ToEntity(existingProfessor);
+            
+            await _userService.UpdateUserAsync(existingProfessor.UserId, professorDto);
             await _repository.Professor.UpdateAsync(existingProfessor);
-            await _repository.ProfessorProject.HandleByProfessor(professorDto.ProjectIds.Select(Guid.Parse), existingProfessor);
+            
+            if (professorDto.ProjectIds.Any())
+                await _repository.ProfessorProject.HandleByProfessor(professorDto.ProjectIds.Select(Guid.Parse), existingProfessor);
 
             return existingProfessor.ToDto();
         }
@@ -83,6 +85,7 @@ namespace saga.Services
             }
 
             await _repository.Professor.DeactiveAsync(existingProfessor);
+            await _userService.DeleteUserAsync(existingProfessor.UserId);
         }
     }
 }

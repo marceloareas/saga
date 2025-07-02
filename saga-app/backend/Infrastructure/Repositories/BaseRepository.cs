@@ -162,6 +162,13 @@ namespace saga.Infrastructure.Repositories
         }
 
         /// <inheritdoc />
+        public virtual async Task ActivateAsync(TEntity entity)
+        {
+            entity.IsDeleted = false;
+            await UpdateAsync(entity);
+        }
+
+        /// <inheritdoc />
         public virtual async Task DeactiveAsync(TEntity entity)
         {
             entity.IsDeleted = true;

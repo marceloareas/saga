@@ -112,11 +112,15 @@ namespace saga.Services
         /// <inheritdoc />
         public async Task<StudentInfoDto> UpdateStudentAsync(Guid id, StudentDto studentDto)
         {
-            var existingStudent = await GetExistingStudentAsync(id);
+            var existingStudent = await _repository
+                .Student
+                .GetByIdAsync(id, s => s.User) ?? throw new ArgumentException($"Student with id {id} does not exist.");
+
             existingStudent = studentDto.ToEntity(existingStudent);
-
+            
+            await _userService.UpdateUserAsync(existingStudent.UserId, studentDto);
             await _repository.Student.UpdateAsync(existingStudent);
-
+            
             return existingStudent.ToInfoDto();
         }
 
@@ -125,6 +129,7 @@ namespace saga.Services
         {
             var existingStudent = await GetExistingStudentAsync(id);
             await _repository.Student.DeactiveAsync(existingStudent);
+            await _userService.DeleteUserAsync(existingStudent.UserId);
         }
 
         private async Task<StudentEntity> GetExistingStudentAsync(Guid id)

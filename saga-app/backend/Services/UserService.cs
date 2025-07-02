@@ -41,17 +41,55 @@ namespace saga.Services
         public async Task<UserEntity> CreateUserAsync(UserDto userDto)
         {
             (var isValid, var message) = await _validations.UserValidator.CanAddUser(userDto);
+
+            _logger.LogInformation($"Creating user with email: {userDto.Email}");
+
+            var existingUser = await _repository.User.GetUserByEmail(userDto.Email);
+            if (existingUser != null)
+            {
+                await _repository.User.ActivateAsync(existingUser);
+                _logger.LogInformation($"User {userDto.Email} already exists, reactivating.");
+                return existingUser;
+            }
+
             _logger.LogInformation($"Creating user{userDto.Email}");
             if (!isValid)
             {
                 throw new ArgumentException(message);
             }
+
             var user = await _repository.User.AddAsync(userDto.ToUserEntity());
             var token = _tokenProvider.GenerateResetPasswordJwt(user, TimeSpan.FromDays(7));
             string emailSubject = "Sua conta foi criada";
             string emailBody = EmailTemplates.WelcomeEmailTemplate(userDto.ResetPasswordPath, token);
             await _emailSender.SendEmail(userDto.Email, emailSubject, emailBody).ConfigureAwait(false);
+
             return user;
+        }
+
+        /// <inheritdoc />
+        public async Task<UserEntity> UpdateUserAsync(Guid id, UserDto userDto)
+        {
+            var existingUser = await _repository
+                .User
+                .GetByIdAsync(id) ?? throw new ArgumentException($"User with id {id} not found.");
+            existingUser = userDto.ToUserEntity(existingUser);
+            await _repository.User.UpdateAsync(existingUser);
+
+            _logger.LogInformation($"User {existingUser.Email} updated successfully. New data: {string.Join(", ", userDto.GetType().GetProperties().Select(p => $"{p.Name}: {p.GetValue(userDto)}"))}");
+
+            return existingUser;
+        }
+
+        /// <inheritdoc />
+        public async Task<UserEntity> DeleteUserAsync(Guid id)
+        {
+            var existingUser = await _repository
+                .User
+                .GetByIdAsync(id) ?? throw new ArgumentException($"User with id {id} not found.");
+            await _repository.User.DeactiveAsync(existingUser);
+            _logger.LogInformation($"User {existingUser.Email} deactivated successfully.");
+            return existingUser;
         }
 
         /// <inheritdoc />

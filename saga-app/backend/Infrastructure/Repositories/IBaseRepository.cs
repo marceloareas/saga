@@ -100,6 +100,12 @@ namespace saga.Infrastructure.Repositories
         Task UpdateAsync(TEntity entity);
 
         /// <summary>
+        /// Activates an entity in the repository.
+        /// </summary>
+        /// <param name="entity">The entity to activate.</param>
+        Task ActivateAsync(TEntity entity);
+
+        /// <summary>
         /// Deletes an entity from the repository.
         /// </summary>
         /// <param name="entity">The entity to delete.</param>

@@ -39,19 +39,6 @@ namespace saga.Infrastructure.Repositories
         /// <inheritdoc />
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-            {
-                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
-                {
-                    var parameter = Expression.Parameter(entityType.ClrType);
-                    var property = Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
-                    var filterExpression = Expression.Equal(property, Expression.Constant(false));
-                    var lambdaExpression = Expression.Lambda(filterExpression, parameter);
-
-                    modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambdaExpression);
-                }
-            }
-
             base.OnModelCreating(modelBuilder);
         }
     }

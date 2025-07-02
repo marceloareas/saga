@@ -122,8 +122,23 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
             else if (userType === 'Professor') {
                 getProfessorById(id)
                     .then(professor => {
-                        setUser(professor);
-                        setProfessor(professor);
+                        setUser({
+                            firstName: professor.firstName,
+                            lastName: professor.lastName,
+                            email: professor.email,
+                            cpf: professor.cpf,
+                            createdAt: professor.createdAt,
+                        });
+                        setProfessor({
+                            siape: professor.siape,
+                            institution: professor.institution,
+                            projectId: professor.projectId,
+                        });
+                        projectsId = professor.projectId;
+                        setOldValues({
+                            ...oldValues,
+                            institutionType: 1, // Assuming default for professors
+                        });
                     })
                     .catch(error => {
                         setError(true);
@@ -271,12 +286,14 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
     const handleSave = (e) => {
         e.preventDefault();
         const form = document.querySelector('form');
+        console.log('user', user);
         if (form.reportValidity()) {
-            isUpdate ? handleUpdate() : handlepost();
+            isUpdate ? handleUpdate(student, user, professor) : handlepost();
         }
     };
 
-    const handleUpdate = () => {
+    const handleUpdate = (student, user, professor) => {
+        console.log('user', user);
         if (isStudent) {
             let body = { ...student, ...user };
             putStudentById(id, body)
@@ -290,6 +307,7 @@ export default function UserForm({ type = undefined, isUpdate = false }) {
             putProfessorById(id, body)
                 .then((student) => navigate("/professors"))
                 .catch(error => setError(true));
+            console.log('body', body);
         }
         else {
             let body = { ...user, ...professor };

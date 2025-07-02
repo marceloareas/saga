@@ -17,6 +17,21 @@ namespace saga.Services.Interfaces
         Task<UserEntity> CreateUserAsync(UserDto userDto);
 
         /// <summary>
+        /// Updates an existing user entity.
+        /// </summary>
+        /// <param name="id">The unique identifier of the user entity to update.</param
+        /// <param name="userDto">The user entity with updated information.</param>
+        /// <returns>The updated user entity.</returns>
+        Task<UserEntity> UpdateUserAsync(Guid id, UserDto userDto);
+
+        /// <summary>
+        /// Deletes a user entity by its unique identifier.
+        /// /// </summary>
+        /// <param name="id">The unique identifier of the user entity to delete.</param>
+        /// <returns>A task representing the asynchronous delete operation.</returns>
+        Task<UserEntity> DeleteUserAsync(Guid id);
+
+        /// <summary>
         /// Authenticate user with provided email and password
         /// </summary>
         /// <param name="loginDto">The LoginDto object containing email and password information</param>
