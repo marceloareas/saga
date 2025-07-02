@@ -39,6 +39,8 @@ namespace saga.Infrastructure.Repositories
         /// <inheritdoc />
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Removed global filter for IsDeleted
+            
             base.OnModelCreating(modelBuilder);
         }
     }

@@ -19,6 +19,12 @@ namespace saga.Infrastructure.Repositories
         Task<IEnumerable<TEntity>> GetAllAsync();
 
         /// <summary>
+        /// Gets all entities in the repository with no filter.
+        /// </summary>
+        /// <returns>An enumerable collection of all entities.</returns>
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync();
+
+        /// <summary>
         /// Gets an entity by its ID.
         /// </summary>
         /// <param name="id">The ID of the entity to get.</param>
@@ -42,6 +48,17 @@ namespace saga.Infrastructure.Repositories
         Task<IEnumerable<TEntity>> GetAllAsync(params Expression<Func<TEntity, object>>[] includeProperties);
 
         Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties);
+
+                    /// <summary>
+        /// Retrieves all entities of type <typeparamref name="TEntity"/> from the repository.
+        /// </summary>
+        /// <param name="includeProperties">An array of property expressions to include in the query results.</param>
+        /// <returns>An enumerable collection of entities of type <typeparamref name="TEntity"/>.</returns>
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(params Expression<Func<TEntity, object>>[] includeProperties);
+
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
             Expression<Func<TEntity, bool>> predicate,
             params Expression<Func<TEntity, object>>[] includeProperties);
 

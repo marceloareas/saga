@@ -47,7 +47,20 @@ namespace saga.Services
         /// <inheritdoc />
         public async Task<IEnumerable<ProfessorInfoDto>> GetAllProfessorsAsync()
         {
-            var professors = await _repository.Professor.GetAllAsync(x => x.User);
+            var professors = await _repository.Professor.GetAllUnfilteredAsync(x => x.User);
+            var professorDtos = new List<ProfessorInfoDto>();
+            foreach (var professor in professors)
+            {
+                professorDtos.Add(professor.ToDto());
+            }
+
+            return professorDtos;
+        }
+
+                /// <inheritdoc />
+        public async Task<IEnumerable<ProfessorInfoDto>> GetAllProfessorsUnfilteredAsync()
+        {
+            var professors = await _repository.Professor.GetAllUnfilteredAsync(x => x.User);
             var professorDtos = new List<ProfessorInfoDto>();
             foreach (var professor in professors)
             {
@@ -60,9 +73,11 @@ namespace saga.Services
         /// <inheritdoc />
         public async Task<ProfessorInfoDto> UpdateProfessorAsync(Guid id, ProfessorDto professorDto)
         {
-            var existingProfessor = await _repository
-                .Professor
-                .GetByIdAsync(id, x => x.User) ?? throw new ArgumentException($"Professor with id {id} does not exist.");
+            var existingProfessor = await _repository.Professor.GetByIdAsync(id);
+            if (existingProfessor == null)
+            {
+                throw new ArgumentException($"Professor with id {id} does not exist.");
+            }
 
             existingProfessor = professorDto.ToEntity(existingProfessor);
             

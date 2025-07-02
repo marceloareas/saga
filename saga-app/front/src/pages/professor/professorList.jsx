@@ -36,6 +36,7 @@ export default function ProfessorList() {
     useEffect(() => {
         getProfessors()
             .then(result => {
+                console.log(result)
                 let mapped = []
                 if (result !== null && result !== undefined) {
                     console.log(result)
@@ -66,6 +67,9 @@ export default function ProfessorList() {
                 <div className="search">
                     <input type="search" name="search" id="search" />
                     <i className="fas fa-"/>
+                </div>
+                <div className="create-button">
+                    <button onClick={() => ''}>Mostrar inativos</button>
                 </div>
                 <div className="create-button">
                     <button onClick={()=> navigate('/professors/add')}>Novo Professor</button>
