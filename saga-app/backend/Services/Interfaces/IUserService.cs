@@ -54,13 +54,6 @@ namespace saga.Services.Interfaces
         /// <exception cref="ArgumentException">Thrown when the user with the specified email is not found.</exception>
         Task<LoginResultDto> ResetPasswordAsync(ResetPasswordDto loginDto);
 
-        /// <summary>
-        /// Authenticate user with provided email and password
-        /// </summary>
-        /// <param name="loginDto">The LoginDto object containing email and password information</param>
-        /// <returns>The generated JWT token</returns>
-        Task<LoginResultDto> AuthenticateAsync(LoginDto loginDto);
-
         
         
     }
