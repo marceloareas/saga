@@ -3,6 +3,7 @@ using saga.Services;
 using saga.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using saga.Models.DTOs.Common;
 
 namespace saga.Controllers
 {
@@ -109,6 +110,23 @@ namespace saga.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        /// <param name="page">Página (>= 1)</param>
+        /// <param name="pageSize">Tamanho da página (1–200)</param>
+        /// <param name="q">Busca simples por nome ou e-mail</param>
+        [HttpGet("paged")]
+        [ProducesResponseType(typeof(PagedResult<ProfessorInfoDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PagedResult<ProfessorInfoDto>>> GetProfessorsPaged(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] string? q = null)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 50;
+            if (pageSize > 200) pageSize = 200;
+            var result = await _professorService.GetProfessorsPageAsync(page, pageSize, q);
+            return Ok(result);
         }
     }
 }
