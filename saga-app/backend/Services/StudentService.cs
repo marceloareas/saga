@@ -34,14 +34,19 @@ namespace saga.Services
         {
             (var canCreate, var msgCreate) = await _validations.StudentValidator.CanCreate(studentDto);
             if (!canCreate) throw new ArgumentException(msgCreate);
-            var user = await _userService.CreateUserAsync(studentDto);
-            var student = studentDto.ToEntity(user.Id);
 
-            student = await _repository.Student.AddAsync(student);
+            StudentEntity? student = null;
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                var user = await _userService.CreateUserAsync(studentDto);
+                student = await _repository.Student.AddAsync(studentDto.ToEntity(user.Id));
+                await _repository.CommitAsync();
+            });
 
-            _logger.LogInformation($"Student {studentDto.Email} created successfully.");
-            return student.ToInfoDto();
-        }
+            _logger.LogInformation("Student {Email} created successfully.", studentDto.Email);
+            return student!.ToInfoDto();
+         }
+
 
         /// <inheritdoc />
         public async Task<IEnumerable<StudentInfoDto>> AddStudentsFromCsvAsync(IFormFile file)
@@ -124,8 +129,12 @@ namespace saga.Services
 
             existingStudent = studentDto.ToEntity(existingStudent);
             
-            await _userService.UpdateUserAsync(existingStudent.UserId, studentDto);
-            await _repository.Student.UpdateAsync(existingStudent);
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                await _userService.UpdateUserAsync(existingStudent.UserId, studentDto);
+                await _repository.Student.UpdateAsync(existingStudent);
+                await _repository.CommitAsync();
+            });
             
             return existingStudent.ToInfoDto();
         }
@@ -134,8 +143,12 @@ namespace saga.Services
         public async Task DeleteStudentAsync(Guid id)
         {
             var existingStudent = await GetExistingStudentAsync(id);
-            await _repository.Student.DeactiveAsync(existingStudent);
-            await _userService.DeleteUserAsync(existingStudent.UserId);
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                await _repository.Student.DeactiveAsync(existingStudent);
+                await _userService.DeleteUserAsync(existingStudent.UserId);
+                await _repository.CommitAsync();
+            });
         }
 
         private async Task<StudentEntity> GetExistingStudentAsync(Guid id)

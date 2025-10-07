@@ -31,14 +31,19 @@ namespace saga.Services
         {
             (var canCreate, var msgCreate) = await _validations.ProfessorValidator.CanCreate(professorDto);
             if (!canCreate) throw new ArgumentException(msgCreate);
-            var user = await _userService.CreateUserAsync(professorDto);
-            var professor = professorDto.ToEntity(user.Id);
-            professor = await _repository.Professor.AddAsync(professor);
-            var desired = (professorDto.ProjectIds ?? Enumerable.Empty<string>()).Select(Guid.Parse);
-            await _repository.ProfessorProject.HandleByProfessor(desired, professor);
 
-            _logger.LogInformation($"Professor {professor.User.Id} created successfully.");
-            return professor.ToDto();
+            ProfessorEntity? professor = null;
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                var user = await _userService.CreateUserAsync(professorDto);
+                professor = await _repository.Professor.AddAsync(professorDto.ToEntity(user.Id));
+                var desired = (professorDto.ProjectIds ?? Enumerable.Empty<string>()).Select(Guid.Parse);
+                await _repository.ProfessorProject.HandleByProfessor(desired, professor!);
+                await _repository.CommitAsync();
+            });
+
+             _logger.LogInformation("Professor {UserId} created successfully.", professor!.User.Id);
+            return professor!.ToDto();
         }
 
         /// <inheritdoc />
@@ -88,11 +93,14 @@ namespace saga.Services
 
             existingProfessor = professorDto.ToEntity(existingProfessor);
             
-            await _userService.UpdateUserAsync(existingProfessor.UserId, professorDto);
-            await _repository.Professor.UpdateAsync(existingProfessor);
-            
-            var desired = (professorDto.ProjectIds ?? Enumerable.Empty<string>()).Select(Guid.Parse);
-            await _repository.ProfessorProject.HandleByProfessor(desired, existingProfessor);
+           await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                await _userService.UpdateUserAsync(existingProfessor.UserId, professorDto);
+                await _repository.Professor.UpdateAsync(existingProfessor);
+                var desired = (professorDto.ProjectIds ?? Enumerable.Empty<string>()).Select(Guid.Parse);
+                await _repository.ProfessorProject.HandleByProfessor(desired, existingProfessor);
+                await _repository.CommitAsync();
+            });
 
             return existingProfessor.ToDto();
         }
@@ -104,8 +112,12 @@ namespace saga.Services
             if (existingProfessor == null)
                 throw new NotFoundException($"Professor with id {id} not found.");
 
-            await _repository.Professor.DeactiveAsync(existingProfessor);
-            await _userService.DeleteUserAsync(existingProfessor.UserId);
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                await _repository.Professor.DeactiveAsync(existingProfessor);
+                await _userService.DeleteUserAsync(existingProfessor.UserId);
+                await _repository.CommitAsync();
+            });
         }
     }
 }

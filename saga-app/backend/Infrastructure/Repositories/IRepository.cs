@@ -84,5 +84,21 @@ namespace saga.Infrastructure.Repositories
         /// </summary>
         /// <returns>A task representing the asynchronous commit operation.</returns>
         Task<int> CommitAsync();
+
+        /// <summary>
+        /// Begins a database transaction.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(
+            System.Threading.CancellationToken cancellationToken = default
+        );
+
+        /// <summary>
+        /// Helper para executar um bloco dentro de transação (commit/rollback automáticos).
+        /// </summary>
+        Task ExecuteInTransactionAsync(
+            Func<System.Threading.Tasks.Task> action,
+            System.Threading.CancellationToken cancellationToken = default
+        );
     }
 }

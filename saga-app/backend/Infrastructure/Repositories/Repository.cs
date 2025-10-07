@@ -11,6 +11,9 @@ using saga.Infrastructure.Repositories.Student;
 using saga.Infrastructure.Repositories.StudentCourse;
 using saga.Infrastructure.Repositories.User;
 using saga.Infrastructure.Repositories.PondocQualis;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+
 
 namespace saga.Infrastructure.Repositories
 {
@@ -84,6 +87,29 @@ namespace saga.Infrastructure.Repositories
         public async Task<int> CommitAsync()
         {
             return await _dbContext.SaveChangesAsync();
+        }
+        public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(
+            System.Threading.CancellationToken cancellationToken = default
+        )
+        {
+            return await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        }
+        public async Task ExecuteInTransactionAsync(
+            Func<System.Threading.Tasks.Task> action,
+            System.Threading.CancellationToken cancellationToken = default
+        )
+        {
+            await using var tx = await BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await action();
+                await tx.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await tx.RollbackAsync(cancellationToken);
+                throw;
+            }
         }
     }
 }
