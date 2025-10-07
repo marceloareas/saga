@@ -14,21 +14,26 @@ namespace saga.Services
         private readonly IRepository _repository;
         private readonly ILogger<StudentService> _logger;
         private readonly IUserService _userService;
+        private readonly Validations _validations;
 
         public StudentService(
             IRepository repository,
             ILogger<StudentService> logger,
-            IUserService userService
+            IUserService userService,
+            Validations validations
         )
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _validations = validations ?? throw new ArgumentNullException(nameof(validations));
         }
 
         /// <inheritdoc />
         public async Task<StudentInfoDto> CreateStudentAsync(StudentDto studentDto)
         {
+            (var canCreate, var msgCreate) = await _validations.StudentValidator.CanCreate(studentDto);
+            if (!canCreate) throw new ArgumentException(msgCreate);
             var user = await _userService.CreateUserAsync(studentDto);
             var student = studentDto.ToEntity(user.Id);
 
@@ -94,9 +99,7 @@ namespace saga.Services
         {
             var studentEntity = await _repository.Student.GetByIdAsync(id, s => s.User, s => s.Project);
             if (studentEntity == null)
-            {
-                throw new ArgumentException("Student not found.");
-            }
+                throw new NotFoundException($"Student with id {id} not found.");
 
             return studentEntity.ToInfoDto();
         }
@@ -114,7 +117,10 @@ namespace saga.Services
         {
             var existingStudent = await _repository
                 .Student
-                .GetByIdAsync(id, s => s.User) ?? throw new ArgumentException($"Student with id {id} does not exist.");
+                .GetByIdAsync(id, s => s.User) ?? throw new NotFoundException($"Student with id {id} not found.");
+            
+            (var canUpdate, var msgUpdate) = await _validations.StudentValidator.CanUpdate(studentDto, id);
+            if (!canUpdate) throw new ArgumentException(msgUpdate);
 
             existingStudent = studentDto.ToEntity(existingStudent);
             
@@ -136,9 +142,7 @@ namespace saga.Services
         {
             var existingStudent = await _repository.Student.GetByIdAsync(id);
             if (existingStudent == null)
-            {
-                throw new ArgumentException($"Student with id {id} does not exist.");
-            }
+                throw new NotFoundException($"Student with id {id} not found.");
             return existingStudent;
         }
 
