@@ -1,0 +1,4876 @@
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Represents the repository with CRUD operaton.
+    /// </summary>
+    /// <typeparam name="TEntity">The type of entity that this repository works with.</typeparam>
+    public abstract class BaseRepository<TEntity> : IBaseRepository<TEntity>
+        where TEntity : BaseEntity
+    {
+        protected readonly ContexRepository _context;
+        protected readonly DbSet<TEntity> _dbSet;
+
+        public BaseRepository(ContexRepository context)
+        {
+            _context = context;
+            _dbSet = context.Set<TEntity>();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<TEntity?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FirstOrDefaultAsync(e => e.Id == id);
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<TEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .SingleOrDefaultAsync(p => p.Id == id);
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> AddRangeAsync(
+            IEnumerable<TEntity> entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+            await _context.SaveChangesAsync();
+            return entities;
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Where(predicate)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+                /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(predicate)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> GetAllAsync(
+            params Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>[] includeProperties)
+        {
+            IQueryable<TEntity> query = _dbSet.Where(e => !e.IsDeleted);
+
+            foreach (var includeProperty in includeProperties)
+            {
+                query = includeProperty(query);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            params Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>[] includeProperties)
+        {
+            IQueryable<TEntity> query = _dbSet;
+
+            foreach (var includeProperty in includeProperties)
+            {
+                query = includeProperty(query);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> GetPagedAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            int pageNumber,
+            int pageSize,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .Where(predicate).Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetPagedAsync(
+            int pageNumber,
+            int pageSize)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Where(predicate)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
+                .Where(predicate)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetPagedAsync(
+            int pageNumber,
+            int pageSize,
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Include(predicate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<TEntity> AddAsync(TEntity entity)
+        {
+            _dbSet.Add(entity);
+            await _context.SaveChangesAsync();
+            return entity;
+        }
+
+        /// <inheritdoc />
+        public virtual async Task UpdateAsync(TEntity entity)
+        {
+            _dbSet.Attach(entity);
+            _context.Entry(entity).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task ActivateAsync(TEntity entity)
+        {
+            entity.IsDeleted = false;
+            await UpdateAsync(entity);
+        }
+
+        /// <inheritdoc />
+        public virtual async Task DeactiveAsync(TEntity entity)
+        {
+            entity.IsDeleted = true;
+            await UpdateAsync(entity);
+        }
+
+        /// <inheritdoc />
+        public virtual async Task DeactiveByIdAsync(Guid id)
+        {
+            TEntity? entityToDelete = await _dbSet.FindAsync(id);
+            if (entityToDelete == null)
+                throw new ArgumentNullException(nameof(entityToDelete));
+
+            entityToDelete.IsDeleted = true;
+            await UpdateAsync(entityToDelete);
+        }
+
+        /// <inheritdoc />
+        public virtual async Task DeactiveRangeAsync(
+            IEnumerable<TEntity> entities)
+        {
+            foreach (var entity in entities)
+            {
+                entity.IsDeleted = true;
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task DeactiveRangeAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            var entitiesToDelete = await _dbSet
+                .Where(predicate)
+                .ToListAsync();
+
+            foreach (var entity in entitiesToDelete)
+            {
+                entity.IsDeleted = true;
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<int> CountAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .CountAsync(e => !e.IsDeleted && predicate.Compile()(e))
+                .ConfigureAwait(false);
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllUnfilteredAsync()
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Represents the database context for the application, providing access to various entity sets.
+    /// </summary>
+    public class ContexRepository : DbContext
+    {
+        /// <summary>
+        /// Gets the database URL.
+        /// </summary>
+        public string? DbUrl { get; }
+
+        // Entity sets
+        public DbSet<UserEntity> Users { get; set; } = null!;
+        public DbSet<StudentEntity> Students { get; set; } = null!;
+        public DbSet<ProfessorEntity> Professors { get; set; } = null!;
+        public DbSet<CourseEntity> Courses { get; set; } = null!;
+        public DbSet<ProjectEntity> Projects { get; set; } = null!;
+        public DbSet<ExternalResearcherEntity> ExternalResearchers { get; set; } = null!;
+        public DbSet<ExtensionEntity> Extensions { get; set; } = null!;
+        public DbSet<ProfessorProjectEntity> ProfessorProjects { get; set; } = null!;
+        public DbSet<StudentCourseEntity> StudentCourses { get; set; } = null!;
+        public DbSet<OrientationEntity> Orientations { get; set; } = null!;
+        public DbSet<ResearchLineEntity> ResearchLines { get; set; } = null!;
+        public DbSet<PondocQualisEntity> Qualis { get; set; } = null!;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContexRepository"/> class with the specified options.
+        /// </summary>
+        /// <param name="options">The options for configuring the database context.</param>
+        public ContexRepository(DbContextOptions<ContexRepository> options)
+            : base(options)
+        { }
+
+        /// <inheritdoc />
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Removed global filter for IsDeleted
+            
+            base.OnModelCreating(modelBuilder);
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Course
+{
+    /// <inheritdoc />
+    public class CourseRepository : BaseRepository<CourseEntity>, ICourseRepository
+    {
+        public CourseRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Course
+{
+    /// <inheritdoc />
+    public interface ICourseRepository : IBaseRepository<CourseEntity>
+    {
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Extension
+{
+    /// <inheritdoc />
+    public class ExtensionRepository : BaseRepository<ExtensionEntity>, IExtensionRepository
+    {
+        private readonly IUserContext _userContext;
+        public ExtensionRepository(ContexRepository dbContext, IUserContext userContext) : base(dbContext)
+        {
+            _userContext = userContext;
+        }
+
+        /// <inheritdoc />
+        public override async Task<ExtensionEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<ExtensionEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .SingleOrDefaultAsync(p => p.Id == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<IEnumerable<ExtensionEntity>> GetAllAsync(
+            params Expression<Func<ExtensionEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .ToListAsync();
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Extension
+{
+    /// <inheritdoc />
+    public interface IExtensionRepository : IBaseRepository<ExtensionEntity>
+    {
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.ExternalResearcher
+{
+    /// <inheritdoc />
+    public class ExternalResearcherRepository : BaseRepository<ExternalResearcherEntity>, IExternalResearcherRepository
+    {
+        public ExternalResearcherRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+
+        /// <inheritdoc />
+        public override async Task<ExternalResearcherEntity?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FirstOrDefaultAsync(e => e.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<ExternalResearcherEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<ExternalResearcherEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .SingleOrDefaultAsync(p => p.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task DeactiveByIdAsync(Guid id)
+        {
+            ExternalResearcherEntity? entityToDelete = await _dbSet.FirstAsync(x => x.UserId == id);
+            if (entityToDelete == null)
+                throw new ArgumentNullException(nameof(entityToDelete));
+
+            entityToDelete.IsDeleted = true;
+            await UpdateAsync(entityToDelete);
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.ExternalResearcher
+{
+    /// <inheritdoc />
+    public interface IExternalResearcherRepository : IBaseRepository<ExternalResearcherEntity>
+    {
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Represents a base repository for entities of type <typeparamref name="TEntity"/>.
+    /// </summary>
+    /// <typeparam name="TEntity">The type of entity that this repository works with.</typeparam>
+    public interface IBaseRepository<TEntity> where TEntity : BaseEntity
+    {
+        /// <summary>
+        /// Gets all entities in the repository.
+        /// </summary>
+        /// <returns>An enumerable collection of all entities.</returns>
+        Task<IEnumerable<TEntity>> GetAllAsync();
+
+        /// <summary>
+        /// Gets all entities in the repository with no filter.
+        /// </summary>
+        /// <returns>An enumerable collection of all entities.</returns>
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync();
+
+        /// <summary>
+        /// Gets an entity by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the entity to get.</param>
+        /// <returns>The entity with the specified ID, or null if not found.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="id"/> is null.</exception>
+        Task<TEntity?> GetByIdAsync(Guid id);
+
+        /// <summary>
+        /// Gets a single entity by its primary key value, including any related entities specified in the includeProperties parameter.
+        /// </summary>
+        /// <param name="id">The primary key value of the entity to retrieve.</param>
+        /// <param name="includeProperties">An optional array of expressions specifying the related entities to include in the result.</param>
+        /// <returns>The entity with the specified primary key value, or null if no matching entity is found.</returns>
+        Task<TEntity?> GetByIdAsync(Guid id, params Expression<Func<TEntity, object>>[] includeProperties);
+
+        /// <summary>
+        /// Retrieves all entities of type <typeparamref name="TEntity"/> from the repository.
+        /// </summary>
+        /// <param name="includeProperties">An array of property expressions to include in the query results.</param>
+        /// <returns>An enumerable collection of entities of type <typeparamref name="TEntity"/>.</returns>
+        Task<IEnumerable<TEntity>> GetAllAsync(params Expression<Func<TEntity, object>>[] includeProperties);
+
+        Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties);
+
+                    /// <summary>
+        /// Retrieves all entities of type <typeparamref name="TEntity"/> from the repository.
+        /// </summary>
+        /// <param name="includeProperties">An array of property expressions to include in the query results.</param>
+        /// <returns>An enumerable collection of entities of type <typeparamref name="TEntity"/>.</returns>
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(params Expression<Func<TEntity, object>>[] includeProperties);
+
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties);
+
+        /// <summary>
+        /// Retrieves a paged subset of entities of type <typeparamref name="TEntity"/> from the repository.
+        /// </summary>
+        /// <param name="predicate">A predicate expression to filter the entities.</param>
+        /// <param name="pageNumber">The page number to retrieve.</param>
+        /// <param name="pageSize">The maximum number of entities per page.</param>
+        /// <param name="includeProperties">An array of property expressions to include in the query results.</param>
+        /// <returns>An enumerable collection of entities of type <typeparamref name="TEntity"/>.</returns>
+        Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> predicate, int pageNumber, int pageSize, params Expression<Func<TEntity, object>>[] includeProperties);
+
+        /// <summary>
+        /// Gets a paged collection of entities.
+        /// </summary>
+        /// <param name="pageNumber">The page number to retrieve.</param>
+        /// <param name="pageSize">The number of entities to retrieve per page.</param>
+        /// <returns>A paged collection of entities.</returns>
+        Task<IEnumerable<TEntity>> GetPagedAsync(int pageNumber, int pageSize);
+
+        /// <summary>
+        /// Finds entities that match the specified predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate to match.</param>
+        /// <returns>A collection of entities that match the predicate.</returns>
+        Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate);
+
+        /// <summary>
+        /// Gets a paged collection of entities that match the specified predicate.
+        /// </summary>
+        /// <param name="pageNumber">The page number to retrieve.</param>
+        /// <param name="pageSize">The number of entities to retrieve per page.</param>
+        /// <param name="predicate">The predicate to match.</param>
+        /// <returns>A paged collection of entities that match the predicate.</returns>
+        Task<IEnumerable<TEntity>> GetPagedAsync(int pageNumber, int pageSize, Expression<Func<TEntity, bool>> predicate);
+
+        /// <summary>
+        /// Adds an entity to the repository.
+        /// </summary>
+        /// <param name="entity">The entity to add.</param>
+        /// <returns>The added entity.</returns>
+        Task<TEntity> AddAsync(TEntity entity);
+
+        /// <summary>
+        /// Adds multiple entities to the repository asynchronously.
+        /// </summary>
+        /// <param name="entities">The entities to be added.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        Task<IEnumerable<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities);
+
+        /// <summary>
+        /// Updates an entity in the repository.
+        /// </summary>
+        /// <param name="entity">The entity to update.</param>
+        Task UpdateAsync(TEntity entity);
+
+        /// <summary>
+        /// Activates an entity in the repository.
+        /// </summary>
+        /// <param name="entity">The entity to activate.</param>
+        Task ActivateAsync(TEntity entity);
+
+        /// <summary>
+        /// Deletes an entity from the repository.
+        /// </summary>
+        /// <param name="entity">The entity to delete.</param>
+        Task DeactiveAsync(TEntity entity);
+
+        /// <summary>
+        /// Deletes an entity with the specified ID from the repository.
+        /// </summary>
+        /// <param name="id">The ID of the entity to delete.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="id"/> is null.</exception>
+        Task DeactiveByIdAsync(Guid id);
+
+        /// <summary>
+        /// Deletes a range of entities from the repository.
+        /// </summary>
+        /// <param name="entities">The entities to delete.</param>
+        Task DeactiveRangeAsync(IEnumerable<TEntity> entities);
+
+        /// <summary>
+        /// Deletes a range of entities based on the specified predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate to filter the entities to be deleted.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task DeactiveRangeAsync(Expression<Func<TEntity, bool>> predicate);
+
+        /// <summary>
+        /// Counts the number of entities that satisfy the specified condition asynchronously.
+        /// </summary>
+        /// <param name="predicate">The condition that the entities must satisfy.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the number of entities that satisfy the specified condition.</returns>
+        Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate);
+    }
+}
+
+using saga.Infrastructure.Repositories.Course;
+using saga.Infrastructure.Repositories.Extension;
+using saga.Infrastructure.Repositories.ExternalResearcher;
+using saga.Infrastructure.Repositories.Orientation;
+using saga.Infrastructure.Repositories.Professor;
+using saga.Infrastructure.Repositories.ProfessorProject;
+using saga.Infrastructure.Repositories.Project;
+using saga.Infrastructure.Repositories.ResearchLine;
+using saga.Infrastructure.Repositories.Student;
+using saga.Infrastructure.Repositories.StudentCourse;
+using saga.Infrastructure.Repositories.User;
+using saga.Infrastructure.Repositories.PondocQualis;
+
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Represents a repository interface that provides access to various entity repositories.
+    /// </summary>
+    public interface IRepository
+    {
+        /// <summary>
+        /// Gets the repository for user entities.
+        /// </summary>
+        IUserRepository User { get; }
+
+        /// <summary>
+        /// Gets the repository for student entities.
+        /// </summary>
+        IStudentRepository Student { get; }
+
+        /// <summary>
+        /// Gets the repository for professor entities.
+        /// </summary>
+        IProfessorRepository Professor { get; }
+
+        /// <summary>
+        /// Gets the repository for project entities.
+        /// </summary>
+        IProjectRepository Project { get; }
+
+        /// <summary>
+        /// Gets the repository for extension entities.
+        /// </summary>
+        IExtensionRepository Extension { get; }
+
+        /// <summary>
+        /// Gets the repository for external researcher entities.
+        /// </summary>
+        IExternalResearcherRepository ExternalResearcher { get; }
+
+        /// <summary>
+        /// Gets the repository for course entities.
+        /// </summary>
+        ICourseRepository Course { get; }
+
+        /// <summary>
+        /// Gets the repository for professor-project entities.
+        /// </summary>
+        IProfessorProjectRepository ProfessorProject { get; }
+
+        /// <summary>
+        /// Gets the repository for student-course entities.
+        /// </summary>
+        IStudentCourseRepository StudentCourse { get; }
+
+        /// <summary>
+        /// Gets the repository for orientation entities.
+        /// </summary>
+        IOrientationRepository Orientation { get; }
+
+        /// <summary>
+        /// Gets the repository for research line entities.
+        /// </summary>
+        IResearchLineRepository ResearchLine { get; }
+
+        /// <summary>
+        /// Gets the repository for Pondoc Qualis entities.
+        /// </summary>
+        IPondocQualisRepository PondocQualis { get; }
+
+        /// <summary>
+        /// Commits the pending changes asynchronously.
+        /// </summary>
+        /// <returns>A task representing the asynchronous commit operation.</returns>
+        Task<int> CommitAsync();
+
+        /// <summary>
+        /// Begins a database transaction.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(
+            System.Threading.CancellationToken cancellationToken = default
+        );
+
+        /// <summary>
+        /// Helper para executar um bloco dentro de transação (commit/rollback automáticos).
+        /// </summary>
+        Task ExecuteInTransactionAsync(
+            Func<System.Threading.Tasks.Task> action,
+            System.Threading.CancellationToken cancellationToken = default
+        );
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Orientation
+{
+    /// <inheritdoc />
+    public interface IOrientationRepository : IBaseRepository<OrientationEntity>
+    {
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Orientation
+{
+    /// <inheritdoc />
+    public class OrientationRepository : BaseRepository<OrientationEntity>, IOrientationRepository
+    {
+        private readonly IUserContext _userContext;
+        public OrientationRepository(ContexRepository dbContext, IUserContext userContext) : base(dbContext)
+        {
+            _userContext = userContext;
+        }
+
+        /// <inheritdoc />
+        public override async Task<OrientationEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<OrientationEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .SingleOrDefaultAsync(p => p.Id == id);
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<OrientationEntity>> GetByRoleAsync(
+            params Expression<Func<OrientationEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .ToListAsync();
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.PondocQualis
+{
+    /// <inheritdoc />
+    public interface IPondocQualisRepository : IBaseRepository<PondocQualisEntity>
+    { }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.PondocQualis
+{
+    /// <inheritdoc />
+    public class PondocQualisRepository : BaseRepository<PondocQualisEntity>, IPondocQualisRepository
+    {
+        public PondocQualisRepository(ContexRepository dbContext) : base(dbContext)
+        { }
+    }
+}
+
+using saga.Models.Entities;
+using System.Linq.Expressions;
+
+namespace saga.Infrastructure.Repositories.Professor
+{
+    /// <inheritdoc />
+    public interface IProfessorRepository : IBaseRepository<ProfessorEntity>
+    {
+         Task<(IReadOnlyList<ProfessorEntity> Items, int TotalCount)> GetPagedAsync(
+             int page,
+             int pageSize,
+             string? q = null,
+             params Expression<Func<ProfessorEntity, object>>[] includes
+         );
+     }
+}
+
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Professor
+{
+    /// <inheritdoc />
+    public class ProfessorRepository : BaseRepository<ProfessorEntity>, IProfessorRepository
+    {
+        public ProfessorRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+
+        /// <inheritdoc />
+        public override async Task<ProfessorEntity?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FirstOrDefaultAsync(e => e.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<ProfessorEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<ProfessorEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .SingleOrDefaultAsync(p => p.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task DeactiveByIdAsync(Guid id)
+        {
+            ProfessorEntity? entityToDelete = await _dbSet.FirstAsync(x => x.UserId == id);
+            if (entityToDelete == null)
+                throw new ArgumentNullException(nameof(entityToDelete));
+
+            entityToDelete.IsDeleted = true;
+            await UpdateAsync(entityToDelete);
+        }
+
+        public async Task<(IReadOnlyList<ProfessorEntity> Items, int TotalCount)> GetPagedAsync(
+             int page,
+             int pageSize,
+             string? q = null,
+             params Expression<Func<ProfessorEntity, object>>[] includes
+         )
+         {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 50;
+
+            IQueryable<ProfessorEntity> query = _dbSet.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(p =>
+                    (p.User != null && p.User.Name.ToLower().Contains(term)) ||
+                    (p.User != null && p.User.Email.ToLower().Contains(term))
+                );
+             }
+
+            foreach (var include in includes ?? Array.Empty<Expression<Func<ProfessorEntity, object>>>())
+                query = query.Include(include);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(p => p.User!.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);         
+        }
+     }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.ProfessorProject
+{
+    /// <inheritdoc />
+    public interface IProfessorProjectRepository : IBaseRepository<ProfessorProjectEntity>
+    {
+        /// <summary>
+        /// Handles the association between professors and a project by adding or removing the appropriate records.
+        /// </summary>
+        /// <param name="newProfessors">The collection of professor IDs to associate with the project.</param>
+        /// <param name="project">The project entity to handle the associations for.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task HandlesByProject(IEnumerable<Guid> newProfessors, ProjectEntity Project);
+
+        /// <summary>
+        /// Handles the association between projects and a Professor by adding or removing the appropriate records.
+        /// </summary>
+        /// <param name="newProjects">The collection of project IDs to associate with the Professor.</param>
+        /// <param name="Professor">The Professor entity to handle the associations for.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task HandleByProfessor(IEnumerable<Guid> newProjects, ProfessorEntity Professor);
+    }
+}
+
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.ProfessorProject
+{
+    /// <inheritdoc />
+    public class ProfessorProjectRepository : BaseRepository<ProfessorProjectEntity>, IProfessorProjectRepository
+    {
+        public ProfessorProjectRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+
+        /// <inheritdoc />
+        public async Task HandlesByProject(IEnumerable<Guid> newProfessors, ProjectEntity Project)
+        {
+            var professorProjects = await this.GetAllAsync(x => x.ProjectId == Project.Id);
+
+            (var professorProjectIds, var professorProjectIdsToDelete) = professorProjects
+                .Select(x => x.ProfessorId)
+                .IEnumerableDifference(newProfessors);
+
+
+            await this.AddRangeAsync(professorProjectIds.Select(
+                x => new ProfessorProjectEntity
+                {
+                    ProfessorId = x,
+                    ProjectId = Project.Id
+                }
+            ));
+            await this.DeactiveRangeAsync(entity =>
+                entity.ProjectId == Project.Id &&
+                professorProjectIdsToDelete.Contains(entity.ProfessorId)
+            );
+        }
+
+        /// <inheritdoc />
+        public async Task HandleByProfessor(IEnumerable<Guid> newProjects, ProfessorEntity Professor)
+        {
+            var professorProjects = await this.GetAllAsync(x => x.ProfessorId == Professor.Id);
+
+            (var professorProjectIds, var professorProjectIdsToDelete) = professorProjects
+                .Select(x => x.ProjectId)
+                .IEnumerableDifference(newProjects);
+
+
+            await this.AddRangeAsync(professorProjectIds.Select(
+                x => new ProfessorProjectEntity
+                {
+                    ProfessorId = Professor.Id,
+                    ProjectId = x
+                }
+            ));
+
+            await this.DeactiveRangeAsync(entity =>
+                entity.ProfessorId == professor.Id &&
+                professorProjectIdsToDelete.Contains(entity.ProjectId)
+            );
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Project
+{
+    /// <inheritdoc />
+    public interface IProjectRepository : IBaseRepository<ProjectEntity>
+    {
+    }
+}
+
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Project
+{
+    /// <inheritdoc />
+    public class ProjectRepository : BaseRepository<ProjectEntity>, IProjectRepository
+    {
+        private readonly IUserContext _userContext;
+        public ProjectRepository(ContexRepository dbContext, IUserContext userContext) : base(dbContext)
+        {
+            _userContext = userContext;
+        }
+
+        /// <inheritdoc />
+        public override async Task<ProjectEntity?> GetByIdAsync(
+            Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Include(x => x.ProfessorProjects.Where(pp => !pp.IsDeleted))
+                .ThenInclude(x => x.Professor)
+                .Include(x => x.Orientations.Where(o => !o.IsDeleted))
+                .Include(x => x.Students.Where(s => !s.IsDeleted))
+                .ThenInclude(x => x.User)
+                .FilterByUserRole(_userContext)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<IEnumerable<ProjectEntity>> GetAllAsync()
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Include(x => x.ProfessorProjects.Where(pp => !pp.IsDeleted))
+                .ThenInclude(x => x.Professor)
+                .Include(x => x.Orientations.Where(o => !o.IsDeleted))
+                .Include(x => x.Students.Where(s => !s.IsDeleted))
+                .ThenInclude(x => x.User)
+                .FilterByUserRole(_userContext)
+                .ToListAsync();
+        }
+    }
+}
+
+using saga.Infrastructure.Providers;
+using saga.Infrastructure.Repositories.Course;
+using saga.Infrastructure.Repositories.Extension;
+using saga.Infrastructure.Repositories.ExternalResearcher;
+using saga.Infrastructure.Repositories.Orientation;
+using saga.Infrastructure.Repositories.Professor;
+using saga.Infrastructure.Repositories.ProfessorProject;
+using saga.Infrastructure.Repositories.Project;
+using saga.Infrastructure.Repositories.ResearchLine;
+using saga.Infrastructure.Repositories.Student;
+using saga.Infrastructure.Repositories.StudentCourse;
+using saga.Infrastructure.Repositories.User;
+using saga.Infrastructure.Repositories.PondocQualis;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Access to all entities in the database.
+    /// </summary>
+    public class Repository : IRepository
+    {
+        public ContexRepository _dbContext;
+        private readonly IUserContext _userContext;
+
+        /// <summary>
+        /// Default constructor to create the data base context to access the database.
+        /// </summary>
+        /// <param name="server">Database url.</param>
+        /// <param name="login">Database login.</param>
+        /// <param name="password">Database password.</param>
+        /// <param name="database">Database name.</param>
+        public Repository(ContexRepository? dbContext, IUserContext userContext)
+        {
+            _userContext = userContext;
+            if (dbContext is not null)
+            {
+                _dbContext = dbContext;
+                _dbContext.Database.EnsureCreated();
+            }
+            else
+            {
+                throw new NullReferenceException("dbContext cannot be null.");
+            }
+        }
+
+
+        /// <inheritdoc />
+        public IUserRepository User => new UserRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IStudentRepository Student => new StudentRepository(_dbContext, _userContext);
+
+        /// <inheritdoc />
+        public IProfessorRepository Professor => new ProfessorRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IProjectRepository Project => new ProjectRepository(_dbContext, _userContext);
+
+        /// <inheritdoc />
+        public IExtensionRepository Extension => new ExtensionRepository(_dbContext, _userContext);
+
+        /// <inheritdoc />
+        public IExternalResearcherRepository ExternalResearcher => new ExternalResearcherRepository(_dbContext);
+
+        /// <inheritdoc />
+        public ICourseRepository Course => new CourseRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IProfessorProjectRepository ProfessorProject => new ProfessorProjectRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IStudentCourseRepository StudentCourse => new StudentCourseRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IOrientationRepository Orientation => new OrientationRepository(_dbContext, _userContext);
+
+        /// <inheritdoc />
+        public IResearchLineRepository ResearchLine => new ResearchLineRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IPondocQualisRepository PondocQualis => new PondocQualisRepository(_dbContext);
+
+        /// <inheritdoc />
+        public async Task<int> CommitAsync()
+        {
+            return await _dbContext.SaveChangesAsync();
+        }
+        public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(
+            System.Threading.CancellationToken cancellationToken = default
+        )
+        {
+            return await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        }
+        public async Task ExecuteInTransactionAsync(
+            Func<System.Threading.Tasks.Task> action,
+            System.Threading.CancellationToken cancellationToken = default
+        )
+        {
+            await using var tx = await BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await action();
+                await tx.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await tx.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.ResearchLine
+{
+    /// <inheritdoc />
+    public interface IResearchLineRepository : IBaseRepository<ResearchLineEntity>
+    {
+    }
+}
+
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.ResearchLine
+{
+    /// <inheritdoc />
+    public class ResearchLineRepository : BaseRepository<ResearchLineEntity>, IResearchLineRepository
+    {
+        public ResearchLineRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.StudentCourse
+{
+    /// <inheritdoc />
+    public interface IStudentCourseRepository : IBaseRepository<StudentCourseEntity>
+    {
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.StudentCourse
+{
+    /// <inheritdoc />
+    public class StudentCourseRepository : BaseRepository<StudentCourseEntity>, IStudentCourseRepository
+    {
+        public StudentCourseRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+    }
+}
+
+using saga.Models.Entities;
+using System.Linq.Expressions;
+
+namespace saga.Infrastructure.Repositories.Student
+{
+    /// <inheritdoc />
+    public interface IStudentRepository : IBaseRepository<StudentEntity>
+    {
+         Task<(IReadOnlyList<StudentEntity> Items, int TotalCount)> GetPagedAsync(
+             int page,
+             int pageSize,
+             string? q = null,
+             params Expression<Func<StudentEntity, object>>[] includes
+         );
+    }
+
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Student
+{
+    /// <inheritdoc />
+    public class StudentRepository : BaseRepository<StudentEntity>, IStudentRepository
+    {
+        private readonly IUserContext _userContext;
+        public StudentRepository(ContexRepository dbContext, IUserContext userContext) : base(dbContext)
+        {
+            _userContext = userContext;
+        }
+
+        /// <inheritdoc />
+        public override async Task<StudentEntity?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FilterByUserRole(_userContext)
+                .FirstOrDefaultAsync(e => e.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<StudentEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<StudentEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .SingleOrDefaultAsync(p => p.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<IEnumerable<StudentEntity>> GetAllAsync(
+            params Expression<Func<StudentEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FilterByUserRole(_userContext)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public override async Task DeactiveByIdAsync(Guid id)
+        {
+            StudentEntity? entityToDelete = await _dbSet.FirstAsync(x => x.UserId == id);
+            if (entityToDelete == null)
+                throw new ArgumentNullException(nameof(entityToDelete));
+
+            entityToDelete.IsDeleted = true;
+            await UpdateAsync(entityToDelete);
+        }
+
+        public async Task<(IReadOnlyList<StudentEntity> Items, int TotalCount)> GetPagedAsync(
+            int page,
+            int pageSize,
+            string? q = null,
+            params Expression<Func<StudentEntity, object>>[] includes
+         )
+         {
+             if (page < 1) page = 1;
+             if (pageSize < 1) pageSize = 50;
+
+             IQueryable<StudentEntity> query = _dbSet.AsNoTracking();
+
+             // busca simples por nome/registro/email (ajuste os campos conforme sua entidade)
+             if (!string.IsNullOrWhiteSpace(q))
+             {
+                 var term = q.Trim().ToLower();
+                 query = query.Where(s =>
+                     (s.User != null && s.User.LastName.ToLower().Contains(term)) ||
+                     (s.Registration != null && s.Registration.ToLower().Contains(term)) ||
+                     (s.User != null && s.User.Email.ToLower().Contains(term))
+                 );
+             }
+
+             foreach (var include in includes ?? Array.Empty<Expression<Func<StudentEntity, object>>>())
+                 query = query.Include(include);
+
+             var total = await query.CountAsync();
+             var items = await query
+                 .OrderBy(s => s.User!.LastName) // ordenação previsível
+                 .Skip((page - 1) * pageSize)
+                 .Take(pageSize)
+                 .ToListAsync();
+
+             return (items, total);
+         }
+     }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.User
+{
+    /// <inheritdoc />
+    public interface IUserRepository : IBaseRepository<UserEntity>
+    {
+        /// <summary>
+        /// Gets a single User Entity from the repository by its email.
+        /// </summary>
+        /// <param name="email">The email of the entity to retrieve.</param>
+        /// <returns>The User Entity with the specified email, or null if no such entity exists in the repository.</returns>
+        Task<UserEntity?> GetUserByEmail(string email);
+    }
+}
+
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.User
+{
+    /// <inheritdoc />
+    public class UserRepository : BaseRepository<UserEntity>, IUserRepository
+    {
+        public UserRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+
+        /// <inheritdoc />
+        public async Task<UserEntity?> GetUserByEmail(string email)
+        {
+            return await _dbSet.FirstOrDefaultAsync(x => x.Email == email);
+        }
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Represents the repository with CRUD operaton.
+    /// </summary>
+    /// <typeparam name="TEntity">The type of entity that this repository works with.</typeparam>
+    public abstract class BaseRepository<TEntity> : IBaseRepository<TEntity>
+        where TEntity : BaseEntity
+    {
+        protected readonly ContexRepository _context;
+        protected readonly DbSet<TEntity> _dbSet;
+
+        public BaseRepository(ContexRepository context)
+        {
+            _context = context;
+            _dbSet = context.Set<TEntity>();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<TEntity?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FirstOrDefaultAsync(e => e.Id == id);
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<TEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .SingleOrDefaultAsync(p => p.Id == id);
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> AddRangeAsync(
+            IEnumerable<TEntity> entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+            await _context.SaveChangesAsync();
+            return entities;
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Where(predicate)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+                /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(predicate)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> GetAllAsync(
+            params Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>[] includeProperties)
+        {
+            IQueryable<TEntity> query = _dbSet.Where(e => !e.IsDeleted);
+
+            foreach (var includeProperty in includeProperties)
+            {
+                query = includeProperty(query);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            params Func<IQueryable<TEntity>, IIncludableQueryable<TEntity, object>>[] includeProperties)
+        {
+            IQueryable<TEntity> query = _dbSet;
+
+            foreach (var includeProperty in includeProperties)
+            {
+                query = includeProperty(query);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<TEntity>> GetPagedAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            int pageNumber,
+            int pageSize,
+            params Expression<Func<TEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .Where(predicate).Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetPagedAsync(
+            int pageNumber,
+            int pageSize)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Where(predicate)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
+                .Where(predicate)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<IEnumerable<TEntity>> GetPagedAsync(
+            int pageNumber,
+            int pageSize,
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Include(predicate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<TEntity> AddAsync(TEntity entity)
+        {
+            _dbSet.Add(entity);
+            await _context.SaveChangesAsync();
+            return entity;
+        }
+
+        /// <inheritdoc />
+        public virtual async Task UpdateAsync(TEntity entity)
+        {
+            _dbSet.Attach(entity);
+            _context.Entry(entity).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task ActivateAsync(TEntity entity)
+        {
+            entity.IsDeleted = false;
+            await UpdateAsync(entity);
+        }
+
+        /// <inheritdoc />
+        public virtual async Task DeactiveAsync(TEntity entity)
+        {
+            entity.IsDeleted = true;
+            await UpdateAsync(entity);
+        }
+
+        /// <inheritdoc />
+        public virtual async Task DeactiveByIdAsync(Guid id)
+        {
+            TEntity? entityToDelete = await _dbSet.FindAsync(id);
+            if (entityToDelete == null)
+                throw new ArgumentNullException(nameof(entityToDelete));
+
+            entityToDelete.IsDeleted = true;
+            await UpdateAsync(entityToDelete);
+        }
+
+        /// <inheritdoc />
+        public virtual async Task DeactiveRangeAsync(
+            IEnumerable<TEntity> entities)
+        {
+            foreach (var entity in entities)
+            {
+                entity.IsDeleted = true;
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task DeactiveRangeAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            var entitiesToDelete = await _dbSet
+                .Where(predicate)
+                .ToListAsync();
+
+            foreach (var entity in entitiesToDelete)
+            {
+                entity.IsDeleted = true;
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        /// <inheritdoc />
+        public virtual async Task<int> CountAsync(
+            Expression<Func<TEntity, bool>> predicate)
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .CountAsync(e => !e.IsDeleted && predicate.Compile()(e))
+                .ConfigureAwait(false);
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllUnfilteredAsync()
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Represents the database context for the application, providing access to various entity sets.
+    /// </summary>
+    public class ContexRepository : DbContext
+    {
+        /// <summary>
+        /// Gets the database URL.
+        /// </summary>
+        public string? DbUrl { get; }
+
+        // Entity sets
+        public DbSet<UserEntity> Users { get; set; } = null!;
+        public DbSet<StudentEntity> Students { get; set; } = null!;
+        public DbSet<ProfessorEntity> Professors { get; set; } = null!;
+        public DbSet<CourseEntity> Courses { get; set; } = null!;
+        public DbSet<ProjectEntity> Projects { get; set; } = null!;
+        public DbSet<ExternalResearcherEntity> ExternalResearchers { get; set; } = null!;
+        public DbSet<ExtensionEntity> Extensions { get; set; } = null!;
+        public DbSet<ProfessorProjectEntity> ProfessorProjects { get; set; } = null!;
+        public DbSet<StudentCourseEntity> StudentCourses { get; set; } = null!;
+        public DbSet<OrientationEntity> Orientations { get; set; } = null!;
+        public DbSet<ResearchLineEntity> ResearchLines { get; set; } = null!;
+        public DbSet<PondocQualisEntity> Qualis { get; set; } = null!;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContexRepository"/> class with the specified options.
+        /// </summary>
+        /// <param name="options">The options for configuring the database context.</param>
+        public ContexRepository(DbContextOptions<ContexRepository> options)
+            : base(options)
+        { }
+
+        /// <inheritdoc />
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Removed global filter for IsDeleted
+            
+            base.OnModelCreating(modelBuilder);
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Course
+{
+    /// <inheritdoc />
+    public class CourseRepository : BaseRepository<CourseEntity>, ICourseRepository
+    {
+        public CourseRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Course
+{
+    /// <inheritdoc />
+    public interface ICourseRepository : IBaseRepository<CourseEntity>
+    {
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Extension
+{
+    /// <inheritdoc />
+    public class ExtensionRepository : BaseRepository<ExtensionEntity>, IExtensionRepository
+    {
+        private readonly IUserContext _userContext;
+        public ExtensionRepository(ContexRepository dbContext, IUserContext userContext) : base(dbContext)
+        {
+            _userContext = userContext;
+        }
+
+        /// <inheritdoc />
+        public override async Task<ExtensionEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<ExtensionEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .SingleOrDefaultAsync(p => p.Id == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<IEnumerable<ExtensionEntity>> GetAllAsync(
+            params Expression<Func<ExtensionEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .ToListAsync();
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Extension
+{
+    /// <inheritdoc />
+    public interface IExtensionRepository : IBaseRepository<ExtensionEntity>
+    {
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.ExternalResearcher
+{
+    /// <inheritdoc />
+    public class ExternalResearcherRepository : BaseRepository<ExternalResearcherEntity>, IExternalResearcherRepository
+    {
+        public ExternalResearcherRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+
+        /// <inheritdoc />
+        public override async Task<ExternalResearcherEntity?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FirstOrDefaultAsync(e => e.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<ExternalResearcherEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<ExternalResearcherEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .SingleOrDefaultAsync(p => p.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task DeactiveByIdAsync(Guid id)
+        {
+            ExternalResearcherEntity? entityToDelete = await _dbSet.FirstAsync(x => x.UserId == id);
+            if (entityToDelete == null)
+                throw new ArgumentNullException(nameof(entityToDelete));
+
+            entityToDelete.IsDeleted = true;
+            await UpdateAsync(entityToDelete);
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.ExternalResearcher
+{
+    /// <inheritdoc />
+    public interface IExternalResearcherRepository : IBaseRepository<ExternalResearcherEntity>
+    {
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Represents a base repository for entities of type <typeparamref name="TEntity"/>.
+    /// </summary>
+    /// <typeparam name="TEntity">The type of entity that this repository works with.</typeparam>
+    public interface IBaseRepository<TEntity> where TEntity : BaseEntity
+    {
+        /// <summary>
+        /// Gets all entities in the repository.
+        /// </summary>
+        /// <returns>An enumerable collection of all entities.</returns>
+        Task<IEnumerable<TEntity>> GetAllAsync();
+
+        /// <summary>
+        /// Gets all entities in the repository with no filter.
+        /// </summary>
+        /// <returns>An enumerable collection of all entities.</returns>
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync();
+
+        /// <summary>
+        /// Gets an entity by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the entity to get.</param>
+        /// <returns>The entity with the specified ID, or null if not found.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="id"/> is null.</exception>
+        Task<TEntity?> GetByIdAsync(Guid id);
+
+        /// <summary>
+        /// Gets a single entity by its primary key value, including any related entities specified in the includeProperties parameter.
+        /// </summary>
+        /// <param name="id">The primary key value of the entity to retrieve.</param>
+        /// <param name="includeProperties">An optional array of expressions specifying the related entities to include in the result.</param>
+        /// <returns>The entity with the specified primary key value, or null if no matching entity is found.</returns>
+        Task<TEntity?> GetByIdAsync(Guid id, params Expression<Func<TEntity, object>>[] includeProperties);
+
+        /// <summary>
+        /// Retrieves all entities of type <typeparamref name="TEntity"/> from the repository.
+        /// </summary>
+        /// <param name="includeProperties">An array of property expressions to include in the query results.</param>
+        /// <returns>An enumerable collection of entities of type <typeparamref name="TEntity"/>.</returns>
+        Task<IEnumerable<TEntity>> GetAllAsync(params Expression<Func<TEntity, object>>[] includeProperties);
+
+        Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties);
+
+                    /// <summary>
+        /// Retrieves all entities of type <typeparamref name="TEntity"/> from the repository.
+        /// </summary>
+        /// <param name="includeProperties">An array of property expressions to include in the query results.</param>
+        /// <returns>An enumerable collection of entities of type <typeparamref name="TEntity"/>.</returns>
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(params Expression<Func<TEntity, object>>[] includeProperties);
+
+        Task<IEnumerable<TEntity>> GetAllUnfilteredAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            params Expression<Func<TEntity, object>>[] includeProperties);
+
+        /// <summary>
+        /// Retrieves a paged subset of entities of type <typeparamref name="TEntity"/> from the repository.
+        /// </summary>
+        /// <param name="predicate">A predicate expression to filter the entities.</param>
+        /// <param name="pageNumber">The page number to retrieve.</param>
+        /// <param name="pageSize">The maximum number of entities per page.</param>
+        /// <param name="includeProperties">An array of property expressions to include in the query results.</param>
+        /// <returns>An enumerable collection of entities of type <typeparamref name="TEntity"/>.</returns>
+        Task<IEnumerable<TEntity>> GetPagedAsync(Expression<Func<TEntity, bool>> predicate, int pageNumber, int pageSize, params Expression<Func<TEntity, object>>[] includeProperties);
+
+        /// <summary>
+        /// Gets a paged collection of entities.
+        /// </summary>
+        /// <param name="pageNumber">The page number to retrieve.</param>
+        /// <param name="pageSize">The number of entities to retrieve per page.</param>
+        /// <returns>A paged collection of entities.</returns>
+        Task<IEnumerable<TEntity>> GetPagedAsync(int pageNumber, int pageSize);
+
+        /// <summary>
+        /// Finds entities that match the specified predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate to match.</param>
+        /// <returns>A collection of entities that match the predicate.</returns>
+        Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate);
+
+        /// <summary>
+        /// Gets a paged collection of entities that match the specified predicate.
+        /// </summary>
+        /// <param name="pageNumber">The page number to retrieve.</param>
+        /// <param name="pageSize">The number of entities to retrieve per page.</param>
+        /// <param name="predicate">The predicate to match.</param>
+        /// <returns>A paged collection of entities that match the predicate.</returns>
+        Task<IEnumerable<TEntity>> GetPagedAsync(int pageNumber, int pageSize, Expression<Func<TEntity, bool>> predicate);
+
+        /// <summary>
+        /// Adds an entity to the repository.
+        /// </summary>
+        /// <param name="entity">The entity to add.</param>
+        /// <returns>The added entity.</returns>
+        Task<TEntity> AddAsync(TEntity entity);
+
+        /// <summary>
+        /// Adds multiple entities to the repository asynchronously.
+        /// </summary>
+        /// <param name="entities">The entities to be added.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        Task<IEnumerable<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities);
+
+        /// <summary>
+        /// Updates an entity in the repository.
+        /// </summary>
+        /// <param name="entity">The entity to update.</param>
+        Task UpdateAsync(TEntity entity);
+
+        /// <summary>
+        /// Activates an entity in the repository.
+        /// </summary>
+        /// <param name="entity">The entity to activate.</param>
+        Task ActivateAsync(TEntity entity);
+
+        /// <summary>
+        /// Deletes an entity from the repository.
+        /// </summary>
+        /// <param name="entity">The entity to delete.</param>
+        Task DeactiveAsync(TEntity entity);
+
+        /// <summary>
+        /// Deletes an entity with the specified ID from the repository.
+        /// </summary>
+        /// <param name="id">The ID of the entity to delete.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="id"/> is null.</exception>
+        Task DeactiveByIdAsync(Guid id);
+
+        /// <summary>
+        /// Deletes a range of entities from the repository.
+        /// </summary>
+        /// <param name="entities">The entities to delete.</param>
+        Task DeactiveRangeAsync(IEnumerable<TEntity> entities);
+
+        /// <summary>
+        /// Deletes a range of entities based on the specified predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate to filter the entities to be deleted.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task DeactiveRangeAsync(Expression<Func<TEntity, bool>> predicate);
+
+        /// <summary>
+        /// Counts the number of entities that satisfy the specified condition asynchronously.
+        /// </summary>
+        /// <param name="predicate">The condition that the entities must satisfy.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the number of entities that satisfy the specified condition.</returns>
+        Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate);
+    }
+}
+
+using saga.Infrastructure.Repositories.Course;
+using saga.Infrastructure.Repositories.Extension;
+using saga.Infrastructure.Repositories.ExternalResearcher;
+using saga.Infrastructure.Repositories.Orientation;
+using saga.Infrastructure.Repositories.Professor;
+using saga.Infrastructure.Repositories.ProfessorProject;
+using saga.Infrastructure.Repositories.Project;
+using saga.Infrastructure.Repositories.ResearchLine;
+using saga.Infrastructure.Repositories.Student;
+using saga.Infrastructure.Repositories.StudentCourse;
+using saga.Infrastructure.Repositories.User;
+using saga.Infrastructure.Repositories.PondocQualis;
+
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Represents a repository interface that provides access to various entity repositories.
+    /// </summary>
+    public interface IRepository
+    {
+        /// <summary>
+        /// Gets the repository for user entities.
+        /// </summary>
+        IUserRepository User { get; }
+
+        /// <summary>
+        /// Gets the repository for student entities.
+        /// </summary>
+        IStudentRepository Student { get; }
+
+        /// <summary>
+        /// Gets the repository for professor entities.
+        /// </summary>
+        IProfessorRepository Professor { get; }
+
+        /// <summary>
+        /// Gets the repository for project entities.
+        /// </summary>
+        IProjectRepository Project { get; }
+
+        /// <summary>
+        /// Gets the repository for extension entities.
+        /// </summary>
+        IExtensionRepository Extension { get; }
+
+        /// <summary>
+        /// Gets the repository for external researcher entities.
+        /// </summary>
+        IExternalResearcherRepository ExternalResearcher { get; }
+
+        /// <summary>
+        /// Gets the repository for course entities.
+        /// </summary>
+        ICourseRepository Course { get; }
+
+        /// <summary>
+        /// Gets the repository for professor-project entities.
+        /// </summary>
+        IProfessorProjectRepository ProfessorProject { get; }
+
+        /// <summary>
+        /// Gets the repository for student-course entities.
+        /// </summary>
+        IStudentCourseRepository StudentCourse { get; }
+
+        /// <summary>
+        /// Gets the repository for orientation entities.
+        /// </summary>
+        IOrientationRepository Orientation { get; }
+
+        /// <summary>
+        /// Gets the repository for research line entities.
+        /// </summary>
+        IResearchLineRepository ResearchLine { get; }
+
+        /// <summary>
+        /// Gets the repository for Pondoc Qualis entities.
+        /// </summary>
+        IPondocQualisRepository PondocQualis { get; }
+
+        /// <summary>
+        /// Commits the pending changes asynchronously.
+        /// </summary>
+        /// <returns>A task representing the asynchronous commit operation.</returns>
+        Task<int> CommitAsync();
+
+        /// <summary>
+        /// Begins a database transaction.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(
+            System.Threading.CancellationToken cancellationToken = default
+        );
+
+        /// <summary>
+        /// Helper para executar um bloco dentro de transação (commit/rollback automáticos).
+        /// </summary>
+        Task ExecuteInTransactionAsync(
+            Func<System.Threading.Tasks.Task> action,
+            System.Threading.CancellationToken cancellationToken = default
+        );
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Orientation
+{
+    /// <inheritdoc />
+    public interface IOrientationRepository : IBaseRepository<OrientationEntity>
+    {
+    }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Orientation
+{
+    /// <inheritdoc />
+    public class OrientationRepository : BaseRepository<OrientationEntity>, IOrientationRepository
+    {
+        private readonly IUserContext _userContext;
+        public OrientationRepository(ContexRepository dbContext, IUserContext userContext) : base(dbContext)
+        {
+            _userContext = userContext;
+        }
+
+        /// <inheritdoc />
+        public override async Task<OrientationEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<OrientationEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .SingleOrDefaultAsync(p => p.Id == id);
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<OrientationEntity>> GetByRoleAsync(
+            params Expression<Func<OrientationEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .ToListAsync();
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.PondocQualis
+{
+    /// <inheritdoc />
+    public interface IPondocQualisRepository : IBaseRepository<PondocQualisEntity>
+    { }
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.PondocQualis
+{
+    /// <inheritdoc />
+    public class PondocQualisRepository : BaseRepository<PondocQualisEntity>, IPondocQualisRepository
+    {
+        public PondocQualisRepository(ContexRepository dbContext) : base(dbContext)
+        { }
+    }
+}
+
+using saga.Models.Entities;
+using System.Linq.Expressions;
+
+namespace saga.Infrastructure.Repositories.Professor
+{
+    /// <inheritdoc />
+    public interface IProfessorRepository : IBaseRepository<ProfessorEntity>
+    {
+         Task<(IReadOnlyList<ProfessorEntity> Items, int TotalCount)> GetPagedAsync(
+             int page,
+             int pageSize,
+             string? q = null,
+             params Expression<Func<ProfessorEntity, object>>[] includes
+         );
+     }
+}
+
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Professor
+{
+    /// <inheritdoc />
+    public class ProfessorRepository : BaseRepository<ProfessorEntity>, IProfessorRepository
+    {
+        public ProfessorRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+
+        /// <inheritdoc />
+        public override async Task<ProfessorEntity?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FirstOrDefaultAsync(e => e.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<ProfessorEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<ProfessorEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .SingleOrDefaultAsync(p => p.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task DeactiveByIdAsync(Guid id)
+        {
+            ProfessorEntity? entityToDelete = await _dbSet.FirstAsync(x => x.UserId == id);
+            if (entityToDelete == null)
+                throw new ArgumentNullException(nameof(entityToDelete));
+
+            entityToDelete.IsDeleted = true;
+            await UpdateAsync(entityToDelete);
+        }
+
+        public async Task<(IReadOnlyList<ProfessorEntity> Items, int TotalCount)> GetPagedAsync(
+             int page,
+             int pageSize,
+             string? q = null,
+             params Expression<Func<ProfessorEntity, object>>[] includes
+         )
+         {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 50;
+
+            IQueryable<ProfessorEntity> query = _dbSet.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(p =>
+                    (p.User != null && p.User.LastName.ToLower().Contains(term)) ||
+                    (p.User != null && p.User.Email.ToLower().Contains(term))
+                );
+             }
+
+            foreach (var include in includes ?? Array.Empty<Expression<Func<ProfessorEntity, object>>>())
+                query = query.Include(include);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(p => p.User!.LastName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);         
+        }
+     }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.ProfessorProject
+{
+    /// <inheritdoc />
+    public interface IProfessorProjectRepository : IBaseRepository<ProfessorProjectEntity>
+    {
+        /// <summary>
+        /// Handles the association between professors and a project by adding or removing the appropriate records.
+        /// </summary>
+        /// <param name="newProfessors">The collection of professor IDs to associate with the project.</param>
+        /// <param name="project">The project entity to handle the associations for.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task HandlesByProject(IEnumerable<Guid> newProfessors, ProjectEntity Project);
+
+        /// <summary>
+        /// Handles the association between projects and a Professor by adding or removing the appropriate records.
+        /// </summary>
+        /// <param name="newProjects">The collection of project IDs to associate with the Professor.</param>
+        /// <param name="Professor">The Professor entity to handle the associations for.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task HandleByProfessor(IEnumerable<Guid> newProjects, ProfessorEntity Professor);
+    }
+}
+
+using saga.Infrastructure.Extensions;
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.ProfessorProject
+{
+    /// <inheritdoc />
+    public class ProfessorProjectRepository : BaseRepository<ProfessorProjectEntity>, IProfessorProjectRepository
+    {
+        public ProfessorProjectRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+
+        /// <inheritdoc />
+        public async Task HandlesByProject(IEnumerable<Guid> newProfessors, ProjectEntity Project)
+        {
+            var professorProjects = await this.GetAllAsync(x => x.ProjectId == Project.Id);
+
+            (var professorProjectIds, var professorProjectIdsToDelete) = professorProjects
+                .Select(x => x.ProfessorId)
+                .IEnumerableDifference(newProfessors);
+
+
+            await this.AddRangeAsync(professorProjectIds.Select(
+                x => new ProfessorProjectEntity
+                {
+                    ProfessorId = x,
+                    ProjectId = Project.Id
+                }
+            ));
+            await this.DeactiveRangeAsync(entity =>
+                entity.ProjectId == Project.Id &&
+                professorProjectIdsToDelete.Contains(entity.ProfessorId)
+            );
+        }
+
+        /// <inheritdoc />
+        public async Task HandleByProfessor(IEnumerable<Guid> newProjects, ProfessorEntity Professor)
+        {
+            var professorProjects = await this.GetAllAsync(x => x.ProfessorId == Professor.Id);
+
+            (var professorProjectIds, var professorProjectIdsToDelete) = professorProjects
+                .Select(x => x.ProjectId)
+                .IEnumerableDifference(newProjects);
+
+
+            await this.AddRangeAsync(professorProjectIds.Select(
+                x => new ProfessorProjectEntity
+                {
+                    ProfessorId = Professor.Id,
+                    ProjectId = x
+                }
+            ));
+
+            await this.DeactiveRangeAsync(entity =>
+                entity.ProfessorId == Professor.Id &&
+                professorProjectIdsToDelete.Contains(entity.ProjectId)
+            );
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.Project
+{
+    /// <inheritdoc />
+    public interface IProjectRepository : IBaseRepository<ProjectEntity>
+    {
+    }
+}
+
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Project
+{
+    /// <inheritdoc />
+    public class ProjectRepository : BaseRepository<ProjectEntity>, IProjectRepository
+    {
+        private readonly IUserContext _userContext;
+        public ProjectRepository(ContexRepository dbContext, IUserContext userContext) : base(dbContext)
+        {
+            _userContext = userContext;
+        }
+
+        /// <inheritdoc />
+        public override async Task<ProjectEntity?> GetByIdAsync(
+            Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Include(x => x.ProfessorProjects.Where(pp => !pp.IsDeleted))
+                .ThenInclude(x => x.Professor)
+                .Include(x => x.Orientations.Where(o => !o.IsDeleted))
+                .Include(x => x.Students.Where(s => !s.IsDeleted))
+                .ThenInclude(x => x.User)
+                .FilterByUserRole(_userContext)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<IEnumerable<ProjectEntity>> GetAllAsync()
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .Include(x => x.ProfessorProjects.Where(pp => !pp.IsDeleted))
+                .ThenInclude(x => x.Professor)
+                .Include(x => x.Orientations.Where(o => !o.IsDeleted))
+                .Include(x => x.Students.Where(s => !s.IsDeleted))
+                .ThenInclude(x => x.User)
+                .FilterByUserRole(_userContext)
+                .ToListAsync();
+        }
+    }
+}
+
+using saga.Infrastructure.Providers;
+using saga.Infrastructure.Repositories.Course;
+using saga.Infrastructure.Repositories.Extension;
+using saga.Infrastructure.Repositories.ExternalResearcher;
+using saga.Infrastructure.Repositories.Orientation;
+using saga.Infrastructure.Repositories.Professor;
+using saga.Infrastructure.Repositories.ProfessorProject;
+using saga.Infrastructure.Repositories.Project;
+using saga.Infrastructure.Repositories.ResearchLine;
+using saga.Infrastructure.Repositories.Student;
+using saga.Infrastructure.Repositories.StudentCourse;
+using saga.Infrastructure.Repositories.User;
+using saga.Infrastructure.Repositories.PondocQualis;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+
+
+namespace saga.Infrastructure.Repositories
+{
+    /// <summary>
+    /// Access to all entities in the database.
+    /// </summary>
+    public class Repository : IRepository
+    {
+        public ContexRepository _dbContext;
+        private readonly IUserContext _userContext;
+
+        /// <summary>
+        /// Default constructor to create the data base context to access the database.
+        /// </summary>
+        /// <param name="server">Database url.</param>
+        /// <param name="login">Database login.</param>
+        /// <param name="password">Database password.</param>
+        /// <param name="database">Database name.</param>
+        public Repository(ContexRepository? dbContext, IUserContext userContext)
+        {
+            _userContext = userContext;
+            if (dbContext is not null)
+            {
+                _dbContext = dbContext;
+                _dbContext.Database.EnsureCreated();
+            }
+            else
+            {
+                throw new NullReferenceException("dbContext cannot be null.");
+            }
+        }
+
+
+        /// <inheritdoc />
+        public IUserRepository User => new UserRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IStudentRepository Student => new StudentRepository(_dbContext, _userContext);
+
+        /// <inheritdoc />
+        public IProfessorRepository Professor => new ProfessorRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IProjectRepository Project => new ProjectRepository(_dbContext, _userContext);
+
+        /// <inheritdoc />
+        public IExtensionRepository Extension => new ExtensionRepository(_dbContext, _userContext);
+
+        /// <inheritdoc />
+        public IExternalResearcherRepository ExternalResearcher => new ExternalResearcherRepository(_dbContext);
+
+        /// <inheritdoc />
+        public ICourseRepository Course => new CourseRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IProfessorProjectRepository ProfessorProject => new ProfessorProjectRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IStudentCourseRepository StudentCourse => new StudentCourseRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IOrientationRepository Orientation => new OrientationRepository(_dbContext, _userContext);
+
+        /// <inheritdoc />
+        public IResearchLineRepository ResearchLine => new ResearchLineRepository(_dbContext);
+
+        /// <inheritdoc />
+        public IPondocQualisRepository PondocQualis => new PondocQualisRepository(_dbContext);
+
+        /// <inheritdoc />
+        public async Task<int> CommitAsync()
+        {
+            return await _dbContext.SaveChangesAsync();
+        }
+        public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(
+            System.Threading.CancellationToken cancellationToken = default
+        )
+        {
+            return await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        }
+        public async Task ExecuteInTransactionAsync(
+            Func<System.Threading.Tasks.Task> action,
+            System.Threading.CancellationToken cancellationToken = default
+        )
+        {
+            await using var tx = await BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await action();
+                await tx.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await tx.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.ResearchLine
+{
+    /// <inheritdoc />
+    public interface IResearchLineRepository : IBaseRepository<ResearchLineEntity>
+    {
+    }
+}
+
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.ResearchLine
+{
+    /// <inheritdoc />
+    public class ResearchLineRepository : BaseRepository<ResearchLineEntity>, IResearchLineRepository
+    {
+        public ResearchLineRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.StudentCourse
+{
+    /// <inheritdoc />
+    public interface IStudentCourseRepository : IBaseRepository<StudentCourseEntity>
+    {
+    }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.StudentCourse
+{
+    /// <inheritdoc />
+    public class StudentCourseRepository : BaseRepository<StudentCourseEntity>, IStudentCourseRepository
+    {
+        public StudentCourseRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+    }
+}
+
+using saga.Models.Entities;
+using System.Linq.Expressions;
+
+namespace saga.Infrastructure.Repositories.Student
+{
+    /// <inheritdoc />
+    public interface IStudentRepository : IBaseRepository<StudentEntity>
+    {
+         Task<(IReadOnlyList<StudentEntity> Items, int TotalCount)> GetPagedAsync(
+             int page,
+             int pageSize,
+             string? q = null,
+             params Expression<Func<StudentEntity, object>>[] includes
+         );
+    }
+
+}
+
+using System.Linq.Expressions;
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Providers;
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.Student
+{
+    /// <inheritdoc />
+    public class StudentRepository : BaseRepository<StudentEntity>, IStudentRepository
+    {
+        private readonly IUserContext _userContext;
+        public StudentRepository(ContexRepository dbContext, IUserContext userContext) : base(dbContext)
+        {
+            _userContext = userContext;
+        }
+
+        /// <inheritdoc />
+        public override async Task<StudentEntity?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FilterByUserRole(_userContext)
+                .FirstOrDefaultAsync(e => e.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<StudentEntity?> GetByIdAsync(
+            Guid id,
+            params Expression<Func<StudentEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .IncludeMultiple(includeProperties)
+                .FilterByUserRole(_userContext)
+                .SingleOrDefaultAsync(p => p.UserId == id);
+        }
+
+        /// <inheritdoc />
+        public override async Task<IEnumerable<StudentEntity>> GetAllAsync(
+            params Expression<Func<StudentEntity, object>>[] includeProperties)
+        {
+            return await _dbSet
+                .Where(e => !e.IsDeleted)
+                .FilterByUserRole(_userContext)
+                .IncludeMultiple(includeProperties)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc />
+        public override async Task DeactiveByIdAsync(Guid id)
+        {
+            StudentEntity? entityToDelete = await _dbSet.FirstAsync(x => x.UserId == id);
+            if (entityToDelete == null)
+                throw new ArgumentNullException(nameof(entityToDelete));
+
+            entityToDelete.IsDeleted = true;
+            await UpdateAsync(entityToDelete);
+        }
+
+        public async Task<(IReadOnlyList<StudentEntity> Items, int TotalCount)> GetPagedAsync(
+            int page,
+            int pageSize,
+            string? q = null,
+            params Expression<Func<StudentEntity, object>>[] includes
+         )
+         {
+             if (page < 1) page = 1;
+             if (pageSize < 1) pageSize = 50;
+
+             IQueryable<StudentEntity> query = _dbSet.AsNoTracking();
+
+             // busca simples por nome/registro/email (ajuste os campos conforme sua entidade)
+             if (!string.IsNullOrWhiteSpace(q))
+             {
+                 var term = q.Trim().ToLower();
+                 query = query.Where(s =>
+                     (s.User != null && s.User.LastName.ToLower().Contains(term)) ||
+                     (s.Registration != null && s.Registration.ToLower().Contains(term)) ||
+                     (s.User != null && s.User.Email.ToLower().Contains(term))
+                 );
+             }
+
+             foreach (var include in includes ?? Array.Empty<Expression<Func<StudentEntity, object>>>())
+                 query = query.Include(include);
+
+             var total = await query.CountAsync();
+             var items = await query
+                 .OrderBy(s => s.User!.LastName) // ordenação previsível
+                 .Skip((page - 1) * pageSize)
+                 .Take(pageSize)
+                 .ToListAsync();
+
+             return (items, total);
+         }
+     }
+}
+
+using saga.Models.Entities;
+
+namespace saga.Infrastructure.Repositories.User
+{
+    /// <inheritdoc />
+    public interface IUserRepository : IBaseRepository<UserEntity>
+    {
+        /// <summary>
+        /// Gets a single User Entity from the repository by its email.
+        /// </summary>
+        /// <param name="email">The email of the entity to retrieve.</param>
+        /// <returns>The User Entity with the specified email, or null if no such entity exists in the repository.</returns>
+        Task<UserEntity?> GetUserByEmail(string email);
+    }
+}
+
+using saga.Models.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace saga.Infrastructure.Repositories.User
+{
+    /// <inheritdoc />
+    public class UserRepository : BaseRepository<UserEntity>, IUserRepository
+    {
+        public UserRepository(ContexRepository dbContext) : base(dbContext)
+        {
+        }
+
+        /// <inheritdoc />
+        public async Task<UserEntity?> GetUserByEmail(string email)
+        {
+            return await _dbSet.FirstOrDefaultAsync(x => x.Email == email);
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for courses.
+    /// </summary>
+    public class CourseValidator
+    {
+        private readonly IRepository _repository;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CourseValidator"/> class.
+        /// </summary>
+        /// <param name="repository">The repository used for data access.</param>
+        public CourseValidator(IRepository repository)
+        {
+            _repository = repository;
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for extensions.
+    /// </summary>
+    public class ExtensionValidator
+    {
+        private readonly IRepository _repository;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ExtensionValidator"/> class.
+        /// </summary>
+        /// <param name="repository">The repository used for data access.</param>
+        public ExtensionValidator(IRepository repository)
+        {
+            _repository = repository;
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for externalResearchers.
+    /// </summary>
+    public class ExternalResearcherValidator
+    {
+        private readonly IRepository _repository;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ExternalResearcherValidator"/> class.
+        /// </summary>
+        /// <param name="repository">The repository used for data access.</param>
+        public ExternalResearcherValidator(IRepository repository)
+        {
+            _repository = repository;
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for orientations.
+    /// </summary>
+    public class OrientationValidator
+    {
+        private readonly IRepository _repository;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OrientationValidator"/> class.
+        /// </summary>
+        /// <param name="repository">The repository used for data access.</param>
+        public OrientationValidator(IRepository repository)
+        {
+            _repository = repository;
+        }
+
+        /// <summary>
+        /// Determines whether a orientation can be added to a project in the given orientation.
+        /// </summary>
+        /// <param name="orientationDto">The orientation DTO containing the orientation and student IDs.</param>
+        /// <returns>A tuple with a boolean indicating whether the orientation can be added, and a message describing the result.</returns>
+        public async Task<(bool, string)> CanAddOrientationToProject(OrientationDto orientationDto)
+        {
+            var project = await _repository.Project.GetByIdAsync(orientationDto.ProjectId);
+            var student = await _repository.Student.GetByIdAsync(orientationDto.StudentId);
+
+            if (project == null || student == null)
+            {
+                return (false, "Project or student not found.");
+            }
+
+            var orientation = await _repository.Orientation.GetAllAsync(x => x.StudentId == student.UserId);
+
+            if (orientation.Any())
+            {
+                return (false, "Student alredy has an orientation.");
+            }
+
+            // Check if the student is already associated with the project
+            if (student.ProjectId != project.Id)
+            {
+                return (false, "Student is not associated with the project.");
+            }
+
+            return (true, "Success.");
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for professors.
+    /// </summary>
+    public class ProfessorValidator
+    {
+        private readonly IRepository _repository;
+
+        public ProfessorValidator(IRepository repository)
+        {
+            _repository = repository;
+        }
+
+        public async Task<(bool ok, string message)> CanCreate(ProfessorDto dto)
+        {
+            if (dto == null) return (false, "Invalid payload.");
+            if (string.IsNullOrWhiteSpace(dto.Email)) return (false, "Email is required.");
+            if (string.IsNullOrWhiteSpace(dto.Cpf)) return (false, "CPF is required.");
+            if (string.IsNullOrWhiteSpace(dto.Siape)) return (false, "SIAPE is required.");
+
+            // Email
+            var existingByEmail = await _repository.User.GetUserByEmail(dto.Email);
+            if (existingByEmail is not null) return (false, "E-mail already in use.");
+
+            // CPF
+            var usersWithCpf = await _repository.User.GetAllAsync(u => u.Cpf == dto.Cpf);
+            if (usersWithCpf?.Any() == true) return (false, "CPF already in use.");
+
+            // SIAPE
+            var siapeClash = await _repository.Professor.GetAllAsync(p => p.Siape == dto.Siape);
+            if (siapeClash?.Any() == true) return (false, "SIAPE already in use.");
+
+            return (true, string.Empty);
+        }
+
+        public async Task<(bool ok, string message)> CanUpdate(ProfessorDto dto, Guid professorId)
+        {
+            if (dto == null) return (false, "Invalid payload.");
+            var existingProfessor = await _repository.Professor.GetByIdAsync(professorId, p => p.User);
+            if (existingProfessor is null) return (false, "Professor not found.");
+
+            var currentUserId = existingProfessor.UserId;
+
+            // Email (se mudou)
+            if (!string.IsNullOrWhiteSpace(dto.Email) && !string.Equals(dto.Email, existingProfessor.User?.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                var existingByEmail = await _repository.User.GetUserByEmail(dto.Email);
+                if (existingByEmail is not null && existingByEmail.Id != currentUserId)
+                    return (false, "E-mail already in use.");
+            }
+
+            // CPF (se mudou)
+            if (!string.IsNullOrWhiteSpace(dto.Cpf) && !string.Equals(dto.Cpf, existingProfessor.User?.Cpf, StringComparison.OrdinalIgnoreCase))
+            {
+                var usersWithCpf = await _repository.User.GetAllAsync(u => u.Cpf == dto.Cpf);
+                if (usersWithCpf?.Any(u => u.Id != currentUserId) == true)
+                    return (false, "CPF already in use.");
+            }
+
+            // SIAPE (se mudou)
+            if (!string.IsNullOrWhiteSpace(dto.Siape) && !string.Equals(dto.Siape, existingProfessor.Siape, StringComparison.OrdinalIgnoreCase))
+            {
+                var siapeClash = await _repository.Professor.GetAllAsync(p => p.Siape == dto.Siape);
+                if (siapeClash?.Any(p => p.Id != professorId) == true)
+                    return (false, "SIAPE already in use.");
+            }
+
+            return (true, string.Empty);
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for projects.
+    /// </summary>
+    public class ProjectValidator
+    {
+        private readonly IRepository _repository;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProjectValidator"/> class.
+        /// </summary>
+        /// <param name="repository">The repository used for data access.</param>
+        public ProjectValidator(IRepository repository)
+        {
+            _repository = repository;
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for researchLines.
+    /// </summary>
+    public class ResearchLineValidator
+    {
+        private readonly IRepository _repository;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResearchLineValidator"/> class.
+        /// </summary>
+        /// <param name="repository">The repository used for data access.</param>
+        public ResearchLineValidator(IRepository repository)
+        {
+            _repository = repository;
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for students.
+    /// </summary>
+    public class StudentValidator
+    {
+        private readonly IRepository _repository;
+
+        public StudentValidator(IRepository repository)
+        {
+            _repository = repository;
+        }
+
+        public async Task<(bool ok, string message)> CanCreate(StudentDto dto)
+        {
+            if (dto == null) return (false, "Invalid payload.");
+            if (string.IsNullOrWhiteSpace(dto.Email)) return (false, "Email is required.");
+            if (string.IsNullOrWhiteSpace(dto.Cpf)) return (false, "CPF is required.");
+            if (string.IsNullOrWhiteSpace(dto.Registration)) return (false, "Registration is required.");
+
+            // Email
+            var existingByEmail = await _repository.User.GetUserByEmail(dto.Email);
+            if (existingByEmail is not null) return (false, "E-mail already in use.");
+
+            // CPF
+            var usersWithCpf = await _repository.User.GetAllAsync(u => u.Cpf == dto.Cpf);
+            if (usersWithCpf?.Any() == true) return (false, "CPF already in use.");
+
+            // Registration
+            var regClash = await _repository.Student.GetAllAsync(s => s.Registration == dto.Registration);
+            if (regClash?.Any() == true) return (false, "Registration already in use.");
+
+            return (true, string.Empty);
+        }
+
+        public async Task<(bool ok, string message)> CanUpdate(StudentDto dto, Guid studentId)
+        {
+            if (dto == null) return (false, "Invalid payload.");
+            var existingStudent = await _repository.Student.GetByIdAsync(studentId, s => s.User);
+            if (existingStudent is null) return (false, "Student not found.");
+
+            var currentUserId = existingStudent.UserId;
+
+            // Email (se mudou)
+            if (!string.IsNullOrWhiteSpace(dto.Email) && !string.Equals(dto.Email, existingStudent.User?.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                var existingByEmail = await _repository.User.GetUserByEmail(dto.Email);
+                if (existingByEmail is not null && existingByEmail.Id != currentUserId)
+                    return (false, "E-mail already in use.");
+            }
+
+            // CPF (se mudou)
+            if (!string.IsNullOrWhiteSpace(dto.Cpf) && !string.Equals(dto.Cpf, existingStudent.User?.Cpf, StringComparison.OrdinalIgnoreCase))
+            {
+                var usersWithCpf = await _repository.User.GetAllAsync(u => u.Cpf == dto.Cpf);
+                if (usersWithCpf?.Any(u => u.Id != currentUserId) == true)
+                    return (false, "CPF already in use.");
+            }
+
+            // Registration (se mudou)
+            if (!string.IsNullOrWhiteSpace(dto.Registration) && !string.Equals(dto.Registration, existingStudent.Registration, StringComparison.OrdinalIgnoreCase))
+            {
+                var regClash = await _repository.Student.GetAllAsync(s => s.Registration == dto.Registration);
+                if (regClash?.Any(s => s.Id != studentId) == true)
+                    return (false, "Registration already in use.");
+            }
+
+            return (true, string.Empty);
+        }
+    }
+}
+
+using saga.Infrastructure.Providers;
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// Provides validation methods for users.
+    /// </summary>
+    public class UserValidator
+    {
+        private readonly IRepository _repository;
+        private readonly IUserContext _userContext;
+        private readonly ILogger<UserValidator> _logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserValidator"/> class.
+        /// </summary>
+        /// <param name="repository">The repository used for data access.</param>
+        public UserValidator(IRepository repository, ILogger<UserValidator> logger, IUserContext userContext)
+        {
+            _repository = repository;
+            _userContext = userContext;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Checks if a user can be added based on the provided user DTO.
+        /// </summary>
+        /// <param name="userDto">The user DTO to be checked.</param>
+        /// <returns>A tuple containing a boolean indicating if the user can be added and an error message if applicable.</returns>
+        public async Task<(bool exists, string errorMessage)> CanAddUser(UserDto userDto)
+        {
+            _logger.LogInformation("starting verifi userDto");
+            if (userDto is null || userDto.Email is null)
+            {
+                _logger.LogInformation("Invalid user DTO.");
+                return (false, $"Invalid user DTO.");
+            }
+
+            var user = await _repository.User.GetUserByEmail(userDto.Email);
+
+            if (user is not null)
+            {
+                _logger.LogInformation($"User with email '{userDto.Email}' already exists.");
+                return (false, $"User with email '{userDto.Email}' already exists.");
+            }
+
+            _logger.LogInformation($"User dto verified.");
+            return (true, "Success");
+        }
+
+        /// <summary>
+        /// Checks if a user can reset password based on the provided ResetPassword DTO.
+        /// </summary>
+        /// <param name="resetPasswordDto">The ResetPassword DTO to be checked.</param>
+        /// <returns>A tuple containing a boolean indicating if the user can reset password and an error message if applicable.</returns>
+        public async Task<(bool exists, string errorMessage)> CanResetPassword(ResetPasswordDto resetPasswordDto)
+        {
+            if (_userContext.UserId is null)
+            {
+                _logger.LogInformation("Token.");
+                return (false, $"Token.");
+            }
+
+            _logger.LogInformation($"reset password dto verified.");
+            return (true, "Success");
+        }
+    }
+}
+
+using saga.Infrastructure.Providers;
+using saga.Infrastructure.Repositories;
+using saga.Infrastructure.Validations;
+
+namespace saga.Infrastructure.Validations
+{
+    public class Validations
+    {
+        private readonly IRepository _repository;
+        private readonly IUserContext _userContext;
+
+        public Validations(
+            IRepository repository,
+            IUserContext userContext,
+            UserValidator userValidator,
+            OrientationValidator orientationValidator,
+            StudentValidator studentValidator,
+            ProfessorValidator professorValidator   
+        )
+        {
+            _repository = repository;
+            _userContext = userContext;
+            UserValidator = userValidator;
+            OrientationValidator = orientationValidator;
+            StudentValidator = studentValidator;
+            ProfessorValidator = professorValidator;
+        }
+
+        public OrientationValidator OrientationValidator { get; }
+        public UserValidator        UserValidator        { get; }
+        public StudentValidator     StudentValidator     { get; }
+        public ProfessorValidator   ProfessorValidator   { get; }
+    }
+}
+
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// A custom validation attribute used to validate CPF addresses.
+    /// </summary>
+    public class ValidCpfAttribute : ValidationAttribute
+    {
+        /// <summary>
+        /// Determines whether the specified value is a valid CPF address.
+        /// </summary>
+        /// <param name="value">The value to validate.</param>
+        /// <returns><c>true</c> if the value is a valid CPF address; otherwise, <c>false</c>.</returns>
+        public override bool IsValid(object? value)
+        {
+            var cpf = value as string;
+            if (cpf == null) return false;
+
+            cpf = cpf.Trim().Replace(".", "").Replace("-", "");
+
+            if (cpf.Length != 11 || !Regex.IsMatch(cpf, @"^\d{11}$"))
+                return false;
+
+            // Validate the CPF algorithmically
+            var cpfArray = cpf.ToCharArray();
+
+            int[] multipliersFirstDigit = { 10, 9, 8, 7, 6, 5, 4, 3, 2 };
+            int[] multipliersSecondDigit = { 11, 10, 9, 8, 7, 6, 5, 4, 3, 2 };
+
+            string firstNineDigits = new string(cpfArray, 0, 9);
+            int sum = 0;
+
+            for (int i = 0; i < 9; i++)
+            {
+                sum += int.Parse(firstNineDigits[i].ToString()) * multipliersFirstDigit[i];
+            }
+
+            int firstVerificationDigit = 11 - (sum % 11);
+            firstVerificationDigit = firstVerificationDigit >= 10 ? 0 : firstVerificationDigit;
+
+            sum = 0;
+            string firstTenDigits = new string(cpfArray, 0, 10);
+
+            for (int i = 0; i < 10; i++)
+            {
+                sum += int.Parse(firstTenDigits[i].ToString()) * multipliersSecondDigit[i];
+            }
+
+            int secondVerificationDigit = 11 - (sum % 11);
+            secondVerificationDigit = secondVerificationDigit >= 10 ? 0 : secondVerificationDigit;
+
+            return cpf.EndsWith(firstVerificationDigit.ToString() + secondVerificationDigit.ToString());
+        }
+    }
+}
+
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// A custom validation attribute used to validate email addresses.
+    /// </summary>
+    public class ValidEmailAttribute : ValidationAttribute
+    {
+        /// <summary>
+        /// Determines whether the specified value is a valid email address.
+        /// </summary>
+        /// <param name="value">The value to validate.</param>
+        /// <returns><c>true</c> if the value is a valid email address; otherwise, <c>false</c>.</returns>
+        public override bool IsValid(object? value)
+        {
+            var email = value as string;
+            if (email == null) return false;
+
+            // Your custom validation logic goes here
+            // For example, you can use a regular expression to validate the email format
+            var regex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            return regex.IsMatch(email);
+        }
+    }
+}
+
+using System;
+using System.ComponentModel.DataAnnotations;
+
+namespace saga.Infrastructure.Validations
+{
+    public class ValidEnumAttribute : ValidationAttribute
+    {
+        private readonly Type _enumType;
+
+        public ValidEnumAttribute(Type enumType)
+        {
+            _enumType = enumType;
+        }
+
+        protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
+        {
+            if (value == null || !Enum.IsDefined(_enumType, value))
+            {
+                return new ValidationResult($"The {validationContext.DisplayName} field is not a valid {_enumType.Name} value.");
+            }
+
+            return ValidationResult.Success;
+        }
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using saga.Models.Enums;
+
+namespace saga.Infrastructure.Validations
+{
+    /// <summary>
+    /// A custom validation attribute used to validate roles enum values.
+    /// </summary>
+    public class ValidRolesEnumAttribute : ValidationAttribute
+    {
+        private readonly IEnumerable<RolesEnum> _acceptedRoles;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ValidRolesEnumAttribute"/> class.
+        /// </summary>
+        /// <param name="acceptedRoles">The accepted roles enum values.</param>
+        public ValidRolesEnumAttribute(params RolesEnum[] acceptedRoles)
+        {
+            _acceptedRoles = acceptedRoles;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ValidRolesEnumAttribute"/> class.
+        /// </summary>
+        /// <param name="acceptedRole">The accepted role enum value.</param>
+        public ValidRolesEnumAttribute(RolesEnum acceptedRole)
+        {
+            _acceptedRoles = new List<RolesEnum> { acceptedRole };
+        }
+
+        /// <summary>
+        /// Determines whether the specified value is a valid roles enum value.
+        /// </summary>
+        /// <param name="value">The value to validate.</param>
+        /// <param name="validationContext">The validation context.</param>
+        /// <returns>A <see cref="ValidationResult"/> indicating whether the value is valid or not.</returns>
+        protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
+        {
+            if (value == null || !Enum.IsDefined(typeof(RolesEnum), value))
+            {
+                return new ValidationResult($"The {validationContext.DisplayName} field is not a valid {typeof(RolesEnum).Name} value.");
+            }
+
+            if (Enum.TryParse(value.ToString(), out RolesEnum enumValue) && !_acceptedRoles.Contains(enumValue))
+            {
+                return new ValidationResult($"The {validationContext.DisplayName} does not accept role {value}.");
+            }
+
+            return ValidationResult.Success;
+        }
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using saga.Infrastructure.Repositories;
+using saga.Models;
+using saga.Models.DTOs;
+using saga.Models.Mapper;
+using saga.Services.Interfaces;
+using Microsoft.Extensions.Logging;
+
+namespace saga.Services
+{
+    public class CourseService : ICourseService
+    {
+        private readonly IRepository _repository;
+        private readonly ILogger<CourseService> _logger;
+
+        public CourseService(IRepository repository, ILogger<CourseService> logger)
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <inheritdoc />
+        public async Task<CourseDto> CreateCourseAsync(CourseDto courseDto)
+        {
+            var course = courseDto.ToEntity();
+
+            await _repository.Course.AddAsync(course);
+
+            _logger.LogInformation($"Course {course.Name} created successfully.");
+
+            return course.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<CourseDto> GetCourseAsync(Guid id)
+        {
+            var courseEntity = await _repository.Course.GetByIdAsync(id);
+            if (courseEntity == null)
+            {
+                throw new ArgumentException($"Course with id {id} not found.");
+            }
+
+            return courseEntity.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<CourseDto>> GetCoursesAsync()
+        {
+            var courses = await _repository.Course.GetAllAsync();
+            var courseDtos = new List<CourseDto>();
+            foreach (var course in courses)
+            {
+                courseDtos.Add(course.ToDto());
+            }
+
+            return courseDtos;
+        }
+
+        /// <inheritdoc />
+        public async Task<CourseDto> UpdateCourseAsync(Guid id, CourseDto courseDto)
+        {
+            var existingCourse = await _repository.Course.GetByIdAsync(id);
+            if (existingCourse == null)
+            {
+                throw new ArgumentException($"Course with id {id} does not exist.");
+            }
+
+            existingCourse = courseDto.ToEntity(existingCourse);
+
+            await _repository.Course.UpdateAsync(existingCourse);
+
+            return existingCourse.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteCourseAsync(Guid id)
+        {
+            var existingCourse = await _repository.Course.GetByIdAsync(id);
+            if (existingCourse == null)
+            {
+                throw new ArgumentException($"Course with id {id} does not exist.");
+            }
+
+            await _repository.Course.DeactiveAsync(existingCourse);
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+using saga.Models.Entities;
+using saga.Models.Enums;
+using saga.Models.Mapper;
+using saga.Services.Interfaces;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
+
+namespace saga.Services
+{
+    public class ExtensionService : IExtensionService
+    {
+        private readonly IRepository _repository;
+        private readonly ILogger<ExtensionService> _logger;
+
+        public ExtensionService(
+            IRepository repository,
+            ILogger<ExtensionService> logger
+        )
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <inheritdoc />
+        public async Task<ExtensionInfoDto> CreateExtensionAsync(ExtensionDto extensionDto)
+        {
+            var extension = extensionDto.ToEntity();
+
+            var student = await _repository.Student.GetByIdAsync(extension.StudentId);
+
+            if (student is null)
+            {
+                throw new ArgumentException($"Student with id: {extension.StudentId} does not exist.");
+            }
+
+            extension = await _repository.Extension.AddAsync(extension);
+
+            UpdateUserDates(student, extension);
+
+            await _repository.Student.UpdateAsync(student);
+
+            _logger.LogInformation($"Extension {extension.StudentId} created successfully.");
+            return extension.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<ExtensionInfoDto> GetExtensionAsync(Guid id)
+        {
+            var extensionEntity = await _repository.Extension.GetByIdAsync(id, x => x.Student);
+            if (extensionEntity == null)
+            {
+                throw new ArgumentException("Extension not found.");
+            }
+
+            return extensionEntity.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<ExtensionInfoDto>> GetAllExtensionsAsync()
+        {
+            var extensions = await _repository.Extension.GetAllAsync(x => x.Student);
+            var extensionDtos = new List<ExtensionInfoDto>();
+            foreach (var extension in extensions)
+            {
+                extensionDtos.Add(extension.ToDto());
+            }
+
+            return extensionDtos;
+        }
+
+        /// <inheritdoc />
+        public async Task<ExtensionInfoDto> UpdateExtensionAsync(Guid id, ExtensionDto extensionDto)
+        {
+            var existingExtension = await _repository.Extension.GetByIdAsync(id);
+            var student = await _repository.Student.GetByIdAsync(extensionDto.StudentId);
+
+            if (existingExtension == null || student is null)
+            {
+                throw new ArgumentException($"Extension with id {id} does not exist.");
+            }
+
+            var oldDays = existingExtension.NumberOfDays;
+
+            existingExtension = extensionDto.ToEntity(existingExtension);
+
+            await _repository.Extension.UpdateAsync(existingExtension);
+
+            UpdateUserDates(student, existingExtension, oldDays);
+
+            await _repository.Student.UpdateAsync(student);
+
+            return existingExtension.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteExtensionAsync(Guid id)
+        {
+            var existingExtension = await _repository.Extension.GetByIdAsync(id);
+            if (existingExtension == null)
+            {
+                throw new ArgumentException($"Extension with id {id} does not exist.");
+            }
+
+            await _repository.Extension.DeactiveAsync(existingExtension);
+        }
+
+        private async void UpdateUserDates(StudentEntity student, ExtensionEntity extension, int oldDays = 0)
+        {
+            switch (extension.Type)
+            {
+                case ExtensionTypeEnum.Qualification:
+                    student.ProjectQualificationDate += TimeSpan.FromDays(extension.NumberOfDays - oldDays);
+                    break;
+                case ExtensionTypeEnum.Defence:
+                    student.ProjectDefenceDate += TimeSpan.FromDays(extension.NumberOfDays - oldDays);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+using saga.Models.Mapper;
+using saga.Services.Interfaces;
+
+namespace saga.Services
+{
+    public class ExternalResearcherService : IExternalResearcherService
+    {
+        private readonly IRepository _repository;
+        private readonly ILogger<ExternalResearcherService> _logger;
+        private readonly IUserService _userService;
+
+        public ExternalResearcherService(
+            IRepository repository,
+            ILogger<ExternalResearcherService> logger,
+            IUserService userService
+        )
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        }
+
+        /// <inheritdoc />
+        public async Task<ExternalResearcherDto> CreateExternalResearcherAsync(ExternalResearcherDto externalResearcherDto)
+        {
+            var userId = (await _userService.CreateUserAsync(externalResearcherDto)).Id;
+            var externalResearcher = externalResearcherDto.ToEntity(userId);
+            externalResearcher = await _repository.ExternalResearcher.AddAsync(externalResearcher);
+
+            _logger.LogInformation($"ExternalResearcher {externalResearcher.User.Id} created successfully.");
+            return externalResearcher.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<ExternalResearcherDto> GetExternalResearcherAsync(Guid id)
+        {
+            var externalResearcherEntity = await _repository.ExternalResearcher.GetByIdAsync(id, x => x.User);
+            if (externalResearcherEntity == null)
+            {
+                throw new ArgumentException("ExternalResearcher not found.");
+            }
+
+            return externalResearcherEntity.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<ExternalResearcherDto>> GetAllExternalResearchersAsync()
+        {
+            var externalResearchers = await _repository.ExternalResearcher.GetAllAsync(x => x.User);
+            var externalResearcherDtos = new List<ExternalResearcherDto>();
+            foreach (var externalResearcher in externalResearchers)
+            {
+                externalResearcherDtos.Add(externalResearcher.ToDto());
+            }
+
+            return externalResearcherDtos;
+        }
+
+        /// <inheritdoc />
+        public async Task<ExternalResearcherDto> UpdateExternalResearcherAsync(Guid id, ExternalResearcherDto externalResearcherDto)
+        {
+            var existingExternalResearcher = await _repository.ExternalResearcher.GetByIdAsync(id);
+            if (existingExternalResearcher == null)
+            {
+                throw new ArgumentException($"ExternalResearcher with id {id} does not exist.");
+            }
+
+            existingExternalResearcher = externalResearcherDto.ToEntity(existingExternalResearcher);
+
+            await _repository.ExternalResearcher.UpdateAsync(existingExternalResearcher);
+
+            return existingExternalResearcher.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteExternalResearcherAsync(Guid id)
+        {
+            var existingExternalResearcher = await _repository.ExternalResearcher.GetByIdAsync(id);
+            if (existingExternalResearcher == null)
+            {
+                throw new ArgumentException($"ExternalResearcher with id {id} does not exist.");
+            }
+
+            await _repository.ExternalResearcher.DeactiveAsync(existingExternalResearcher);
+        }
+    }
+}
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using saga.Models.DTOs;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// Interface for CourseService that defines the methods to manage courses.
+    /// </summary>
+    public interface ICourseService
+    {
+        /// <summary>
+        /// Creates a new course.
+        /// </summary>
+        /// <param name="courseDto">The DTO object containing the course information.</param>
+        /// <returns>The newly created course.</returns>
+        Task<CourseDto> CreateCourseAsync(CourseDto courseDto);
+
+        /// <summary>
+        /// Retrieves a course by its ID.
+        /// </summary>
+        /// <param name="id">The ID of the course to retrieve.</param>
+        /// <returns>The course matching the specified ID.</returns>
+        Task<CourseDto> GetCourseAsync(Guid id);
+
+        /// <summary>
+        /// Retrieves a list of all courses.
+        /// </summary>
+        /// <returns>A list of all courses.</returns>
+        Task<IEnumerable<CourseDto>> GetCoursesAsync();
+
+        /// <summary>
+        /// Updates a course.
+        /// </summary>
+        /// <param name="id">The ID of the course to update.</param>
+        /// <param name="courseDto">The DTO object containing the updated course information.</param>
+        /// <returns>The updated course.</returns>
+        Task<CourseDto> UpdateCourseAsync(Guid id, CourseDto courseDto);
+
+        /// <summary>
+        /// Deletes a course.
+        /// </summary>
+        /// <param name="id">The ID of the course to delete.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        Task DeleteCourseAsync(Guid id);
+    }
+}
+
+using saga.Models.DTOs;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// Defines methods for managing orientations.
+    /// </summary>
+    public interface IOrientationService
+    {
+        /// <summary>
+        /// Creates a new orientation.
+        /// </summary>
+        /// <param name="orientationDto">The orientation DTO containing the orientation details.</param>
+        /// <returns>The created orientation DTO.</returns>
+        Task<OrientationInfoDto> CreateOrientationAsync(OrientationDto orientationDto);
+
+        /// <summary>
+        /// Retrieves a orientation by ID.
+        /// </summary>
+        /// <param name="id">The ID of the orientation to retrieve.</param>
+        /// <returns>The orientation DTO with the specified ID.</returns>
+        Task<OrientationInfoDto> GetOrientationAsync(Guid id);
+
+        /// <summary>
+        /// Gets a list of all orientation entities.
+        /// </summary>
+        /// <returns>A list of all orientation entities.</returns>
+        Task<IEnumerable<OrientationInfoDto>> GetAllOrientationsAsync();
+
+        /// <summary>
+        /// Updates a orientation.
+        /// </summary>
+        /// <param name="id">The ID of the orientation to update.</param>
+        /// <param name="orientationDto">The orientation DTO containing the updated orientation details.</param>
+        /// <returns>The updated orientation DTO.</returns>
+        Task<OrientationInfoDto> UpdateOrientationAsync(Guid id, OrientationDto orientationDto);
+
+        /// <summary>
+        /// Deletes a orientation.
+        /// </summary>
+        /// <param name="id">The ID of the orientation to delete.</param>
+        Task DeleteOrientationAsync(Guid id);
+    }
+}
+
+using saga.Models.DTOs;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// Defines methods for managing extensions.
+    /// </summary>
+    public interface IExtensionService
+    {
+        /// <summary>
+        /// Creates a new extension.
+        /// </summary>
+        /// <param name="extensionDto">The extension DTO containing the extension details.</param>
+        /// <returns>The created extension DTO.</returns>
+        Task<ExtensionInfoDto> CreateExtensionAsync(ExtensionDto extensionDto);
+
+        /// <summary>
+        /// Retrieves a extension by ID.
+        /// </summary>
+        /// <param name="id">The ID of the extension to retrieve.</param>
+        /// <returns>The extension DTO with the specified ID.</returns>
+        Task<ExtensionInfoDto> GetExtensionAsync(Guid id);
+
+        /// <summary>
+        /// Gets a list of all extension entities.
+        /// </summary>
+        /// <returns>A list of all extension entities.</returns>
+        Task<IEnumerable<ExtensionInfoDto>> GetAllExtensionsAsync();
+
+        /// <summary>
+        /// Updates a extension.
+        /// </summary>
+        /// <param name="id">The ID of the extension to update.</param>
+        /// <param name="extensionDto">The extension DTO containing the updated extension details.</param>
+        /// <returns>The updated extension DTO.</returns>
+        Task<ExtensionInfoDto> UpdateExtensionAsync(Guid id, ExtensionDto extensionDto);
+
+        /// <summary>
+        /// Deletes a extension.
+        /// </summary>
+        /// <param name="id">The ID of the extension to delete.</param>
+        Task DeleteExtensionAsync(Guid id);
+    }
+}
+
+using saga.Models.DTOs;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// Defines methods for managing externalResearchers.
+    /// </summary>
+    public interface IExternalResearcherService
+    {
+        /// <summary>
+        /// Creates a new externalResearcher.
+        /// </summary>
+        /// <param name="externalResearcherDto">The externalResearcher DTO containing the externalResearcher details.</param>
+        /// <returns>The created externalResearcher DTO.</returns>
+        Task<ExternalResearcherDto> CreateExternalResearcherAsync(ExternalResearcherDto externalResearcherDto);
+
+        /// <summary>
+        /// Retrieves a externalResearcher by ID.
+        /// </summary>
+        /// <param name="id">The ID of the externalResearcher to retrieve.</param>
+        /// <returns>The externalResearcher DTO with the specified ID.</returns>
+        Task<ExternalResearcherDto> GetExternalResearcherAsync(Guid id);
+
+        /// <summary>
+        /// Gets a list of all externalResearcher entities.
+        /// </summary>
+        /// <returns>A list of all externalResearcher entities.</returns>
+        Task<IEnumerable<ExternalResearcherDto>> GetAllExternalResearchersAsync();
+
+        /// <summary>
+        /// Updates a externalResearcher.
+        /// </summary>
+        /// <param name="id">The ID of the externalResearcher to update.</param>
+        /// <param name="externalResearcherDto">The externalResearcher DTO containing the updated externalResearcher details.</param>
+        /// <returns>The updated externalResearcher DTO.</returns>
+        Task<ExternalResearcherDto> UpdateExternalResearcherAsync(Guid id, ExternalResearcherDto externalResearcherDto);
+
+        /// <summary>
+        /// Deletes a externalResearcher.
+        /// </summary>
+        /// <param name="id">The ID of the externalResearcher to delete.</param>
+        Task DeleteExternalResearcherAsync(Guid id);
+    }
+}
+
+using saga.Models.DTOs;
+using saga.Models.DTOs.Common;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// Defines methods for managing professors.
+    /// </summary>
+    public interface IProfessorService
+    {
+        /// <summary>
+        /// Creates a new professor.
+        /// </summary>
+        /// <param name="professorDto">The professor DTO containing the professor details.</param>
+        /// <returns>The created professor DTO.</returns>
+        Task<ProfessorInfoDto> CreateProfessorAsync(ProfessorDto professorDto);
+
+        /// <summary>
+        /// Retrieves a professor by ID.
+        /// </summary>
+        /// <param name="id">The ID of the professor to retrieve.</param>
+        /// <returns>The professor DTO with the specified ID.</returns>
+        Task<ProfessorInfoDto> GetProfessorAsync(Guid id);
+
+        Task<IEnumerable<ProfessorInfoDto>> GetAllProfessorsUnfilteredAsync();
+
+        /// <summary>
+        /// Gets a list of all professor entities.
+        /// </summary>
+        /// <returns>A list of all professor entities.</returns>
+        Task<IEnumerable<ProfessorInfoDto>> GetAllProfessorsAsync();
+
+        /// <summary>
+        /// Lista paginada de professores (com busca simples).
+        /// </summary>
+        Task<PagedResult<ProfessorInfoDto>> GetProfessorsPageAsync(int page = 1, int pageSize = 50, string? q = null);
+
+        /// <summary>
+        /// Updates a professor.
+        /// </summary>
+        /// <param name="id">The ID of the professor to update.</param>
+        /// <param name="professorDto">The professor DTO containing the updated professor details.</param>
+        /// <returns>The updated professor DTO.</returns>
+        Task<ProfessorInfoDto> UpdateProfessorAsync(Guid id, ProfessorDto professorDto);
+
+        /// <summary>
+        /// Deletes a professor.
+        /// </summary>
+        /// <param name="id">The ID of the professor to delete.</param>
+        Task DeleteProfessorAsync(Guid id);
+    }
+}
+
+using saga.Models.DTOs;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// Defines methods for managing projects.
+    /// </summary>
+    public interface IProjectService
+    {
+        /// <summary>
+        /// Creates a new project.
+        /// </summary>
+        /// <param name="projectDto">The project DTO containing the project details.</param>
+        /// <returns>The created project DTO.</returns>
+        Task<ProjectInfoDto> CreateProjectAsync(ProjectDto projectDto);
+
+        /// <summary>
+        /// Retrieves a project by ID.
+        /// </summary>
+        /// <param name="id">The ID of the project to retrieve.</param>
+        /// <returns>The project DTO with the specified ID.</returns>
+        Task<ProjectInfoDto> GetProjectAsync(Guid id);
+
+        /// <summary>
+        /// Gets a list of all project entities.
+        /// </summary>
+        /// <returns>A list of all project entities.</returns>
+        Task<IEnumerable<ProjectInfoDto>> GetAllProjectsAsync();
+
+        /// <summary>
+        /// Updates a project.
+        /// </summary>
+        /// <param name="id">The ID of the project to update.</param>
+        /// <param name="projectDto">The project DTO containing the updated project details.</param>
+        /// <returns>The updated project DTO.</returns>
+        Task<ProjectInfoDto> UpdateProjectAsync(Guid id, ProjectDto projectDto);
+
+        /// <summary>
+        /// Deletes a project.
+        /// </summary>
+        /// <param name="id">The ID of the project to delete.</param>
+        Task DeleteProjectAsync(Guid id);
+    }
+}
+
+using saga.Models.DTOs;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// Defines methods for managing researchLines.
+    /// </summary>
+    public interface IResearchLineService
+    {
+        /// <summary>
+        /// Creates a new researchLine.
+        /// </summary>
+        /// <param name="researchLineDto">The researchLine DTO containing the researchLine details.</param>
+        /// <returns>The created researchLine DTO.</returns>
+        Task<ResearchLineInfoDto> CreateResearchLineAsync(ResearchLineDto researchLineDto);
+
+        /// <summary>
+        /// Retrieves a researchLine by ID.
+        /// </summary>
+        /// <param name="id">The ID of the researchLine to retrieve.</param>
+        /// <returns>The researchLine DTO with the specified ID.</returns>
+        Task<ResearchLineInfoDto> GetResearchLineAsync(Guid id);
+
+        /// <summary>
+        /// Gets a list of all researchLine entities.
+        /// </summary>
+        /// <returns>A list of all researchLine entities.</returns>
+        Task<IEnumerable<ResearchLineInfoDto>> GetAllResearchLinesAsync();
+
+        /// <summary>
+        /// Updates a researchLine.
+        /// </summary>
+        /// <param name="id">The ID of the researchLine to update.</param>
+        /// <param name="researchLineDto">The researchLine DTO containing the updated researchLine details.</param>
+        /// <returns>The updated researchLine DTO.</returns>
+        Task<ResearchLineInfoDto> UpdateResearchLineAsync(Guid id, ResearchLineDto researchLineDto);
+
+        /// <summary>
+        /// Deletes a researchLine.
+        /// </summary>
+        /// <param name="id">The ID of the researchLine to delete.</param>
+        Task DeleteResearchLineAsync(Guid id);
+    }
+}
+
+using saga.Models.DTOs;
+using saga.Models.Entities;
+using saga.Models.DTOs.Common;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// Provides CRUD operations for managing student entities.
+    /// </summary>
+    public interface IStudentService
+    {
+        /// <summary>
+        /// Creates a new student entity.
+        /// </summary>
+        /// <param name="studentDto">The student entity to create.</param>
+        /// <returns>The created student entity.</returns>
+        Task<StudentInfoDto> CreateStudentAsync(StudentDto student);
+
+        /// <summary>
+        /// Adds a list of students from a CSV file asynchronously.
+        /// </summary>
+        /// <param name="file">The CSV file containing the student data.</param>
+        /// <returns>An enumerable of the inserted students.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when the input file is null.</exception>
+        /// <exception cref="CsvHelper.CsvReaderException">Thrown when there is an error reading the CSV file.</exception>
+        /// <exception cref="System.Exception">Thrown when there is an error creating the student in the database.</exception>
+        Task<IEnumerable<StudentInfoDto>> AddStudentsFromCsvAsync(IFormFile file);
+
+        /// <summary>
+        /// Adds a list of courses to students from a CSV file asynchronously.
+        /// </summary>
+        /// <param name="file">The CSV file containing the courses data.</param>
+        /// <returns>An enumerable of the inserted courses.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when the input file is null.</exception>
+        /// <exception cref="CsvHelper.CsvReaderException">Thrown when there is an error reading the CSV file.</exception>
+        /// <exception cref="System.Exception">Thrown when there is an error creating the student in the database.</exception>
+        Task<IEnumerable<StudentCourseDto>> AddCoursesToStudentsFromCsvAsync(IFormFile file);
+
+        /// <summary>
+        /// Gets a student entity by its ID.
+        /// </summary>
+        /// <param name="studentId">The ID of the student entity to retrieve.</param>
+        /// <returns>The student entity with the specified ID.</returns>
+        Task<StudentInfoDto> GetStudentAsync(Guid studentId);
+
+        /// <summary>
+        /// Update a student.
+        /// </summary>
+        /// <param name="id">The id of the student to update.</param>
+        /// <param name="studentDto">The student DTO to update.</param>
+        /// <returns>The updated student DTO.</returns>
+        public Task<StudentInfoDto> UpdateStudentAsync(Guid id, StudentDto studentDto);
+
+        /// <summary>
+        /// Deletes a student entity.
+        /// </summary>
+        /// <param name="studentId">The ID of the student entity to delete.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        Task DeleteStudentAsync(Guid studentId);
+
+        /// <summary>
+        /// Gets a list of all student entities.
+        /// </summary>
+        /// <returns>A list of all student entities.</returns>
+        Task<IEnumerable<StudentInfoDto>> GetAllStudentsAsync();
+
+        /// <summary>
+        /// Lista paginada de estudantes (com busca simples).
+        /// </summary>
+        Task<PagedResult<StudentInfoDto>> GetStudentsPageAsync(int page = 1, int pageSize = 50, string? q = null);
+
+    }
+}
+
+using saga.Models.DTOs;
+using saga.Models.Entities;
+
+namespace saga.Services.Interfaces
+{
+    /// <summary>
+    /// provides the contract for user-related operations in the application.
+    /// It defines several methods for creating, retrieving, updating, and deleting user information.
+    /// </summary>
+    public interface IUserService
+    {
+        /// <summary>
+        /// Creates a new user entity.
+        /// </summary>
+        /// <param name="userDto">The user entity to create.</param>
+        /// <returns>The created user entity.</returns>
+        Task<UserEntity> CreateUserAsync(UserDto userDto);
+
+        /// <summary>
+        /// Updates an existing user entity.
+        /// </summary>
+        /// <param name="id">The unique identifier of the user entity to update.</param
+        /// <param name="userDto">The user entity with updated information.</param>
+        /// <returns>The updated user entity.</returns>
+        Task<UserEntity> UpdateUserAsync(Guid id, UserDto userDto);
+
+        /// <summary>
+        /// Deletes a user entity by its unique identifier.
+        /// /// </summary>
+        /// <param name="id">The unique identifier of the user entity to delete.</param>
+        /// <returns>A task representing the asynchronous delete operation.</returns>
+        Task<UserEntity> DeleteUserAsync(Guid id);
+
+        /// <summary>
+        /// Authenticate user with provided email and password
+        /// </summary>
+        /// <param name="loginDto">The LoginDto object containing email and password information</param>
+        /// <returns>The generated JWT token</returns>
+        Task<LoginResultDto> AuthenticateAsync(LoginDto loginDto);
+
+        /// <summary>
+        /// Requests a password reset for the user with the specified email.
+        /// </summary>
+        /// <param name="request">The request reset password data transfer object.</param>
+        /// <returns>A task representing the asynchronous password reset request.</returns>
+        /// <exception cref="ArgumentException">Thrown when the user with the specified email is not found.</exception>
+        Task ResetPasswordRequestAsync(RequestResetPasswordDto request);
+
+        /// <summary>
+        /// Resets the password for the user with the specified email.
+        /// </summary>
+        /// <param name="loginDto">The reset password data transfer object.</param>
+        /// <returns>A task representing the asynchronous password reset operation.</returns>
+        /// <exception cref="ArgumentException">Thrown when the user with the specified email is not found.</exception>
+        Task<LoginResultDto> ResetPasswordAsync(ResetPasswordDto loginDto);
+
+        
+        
+    }
+}
+
+
+using saga.Infrastructure.Repositories;
+using saga.Infrastructure.Validations;
+using saga.Models.DTOs;
+using saga.Models.Mapper;
+using saga.Services.Interfaces;
+
+namespace saga.Services
+{
+    public class OrientationService : IOrientationService
+    {
+        private readonly IRepository _repository;
+        private readonly ILogger<OrientationService> _logger;
+        private readonly Validations _validations;
+
+        public OrientationService(
+            IRepository repository,
+            ILogger<OrientationService> logger,
+            Validations validations
+        )
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _validations = validations ?? throw new ArgumentNullException(nameof(validations));
+        }
+
+        /// <inheritdoc />
+        public async Task<OrientationInfoDto> CreateOrientationAsync(OrientationDto orientationDto)
+        {
+            (var isValid, var message) = await _validations.OrientationValidator.CanAddOrientationToProject(orientationDto);
+            if (!isValid)
+            {
+                throw new ArgumentException(message);
+            }
+
+            var orientation = await _repository.Orientation.AddAsync(orientationDto.ToEntity());
+
+            _logger.LogInformation($"Orientation {orientation.Id} created successfully.");
+            return orientation.ToInfoDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<OrientationInfoDto> GetOrientationAsync(Guid id)
+        {
+            var orientationEntity = await _repository.Orientation.GetByIdAsync(id, x => x.Professor, x => x.Coorientator, x => x.Student, x => x.Project);
+            if (orientationEntity == null)
+            {
+                throw new ArgumentException("Orientation not found.");
+            }
+
+            return orientationEntity.ToInfoDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<OrientationInfoDto>> GetAllOrientationsAsync()
+        {
+            var orientations = await _repository.Orientation.GetAllAsync(x => x.Professor, x => x.Coorientator, x => x.Student, x => x.Project);
+            var orientationDtos = new List<OrientationInfoDto>();
+            foreach (var orientation in orientations)
+            {
+                orientationDtos.Add(orientation.ToInfoDto());
+            }
+
+            return orientationDtos;
+        }
+
+        /// <inheritdoc />
+        public async Task<OrientationInfoDto> UpdateOrientationAsync(Guid id, OrientationDto orientationDto)
+        {
+            (var isValid, var message) = await _validations.OrientationValidator.CanAddOrientationToProject(orientationDto);
+            if (!isValid)
+            {
+                throw new ArgumentException(message);
+            }
+
+            var existingOrientation = await _repository.Orientation.GetByIdAsync(id) ?? throw new ArgumentException($"Orientation with id {id} does not exist.");
+
+            existingOrientation = orientationDto.ToEntity(existingOrientation);
+
+            await _repository.Orientation.UpdateAsync(existingOrientation);
+
+            return existingOrientation.ToInfoDto();
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteOrientationAsync(Guid id)
+        {
+            var existingOrientation = await _repository.Orientation.GetByIdAsync(id);
+            if (existingOrientation == null)
+            {
+                throw new ArgumentException($"Orientation with id {id} does not exist.");
+            }
+
+            await _repository.Orientation.DeactiveAsync(existingOrientation);
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+using saga.Models.Mapper;
+using saga.Services.Interfaces;
+using saga.Models.DTOs.Common;
+using saga.Infrastructure.Validations;
+using saga.Infrastructure.Exceptions;
+using saga.Models.Entities;
+
+
+namespace saga.Services
+{
+    public class ProfessorService : IProfessorService
+    {
+        private readonly IRepository _repository;
+        private readonly ILogger<ProfessorService> _logger;
+        private readonly IUserService _userService;
+        private readonly Validations _validations;
+
+
+        public ProfessorService(
+            IRepository repository,
+            ILogger<ProfessorService> logger,
+            IUserService userService,
+            Validations validations
+        )
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _validations = validations ?? throw new ArgumentNullException(nameof(validations));
+        }
+
+        /// <inheritdoc />
+        public async Task<ProfessorInfoDto> CreateProfessorAsync(ProfessorDto professorDto)
+        {
+            (var canCreate, var msgCreate) = await _validations.ProfessorValidator.CanCreate(professorDto);
+            if (!canCreate) throw new ArgumentException(msgCreate);
+
+            ProfessorEntity? professor = null;
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                var user = await _userService.CreateUserAsync(professorDto);
+                professor = await _repository.Professor.AddAsync(professorDto.ToEntity(user.Id));
+                var desired = (professorDto.ProjectIds ?? Enumerable.Empty<string>()).Select(Guid.Parse);
+                await _repository.ProfessorProject.HandleByProfessor(desired, professor!);
+                await _repository.CommitAsync();
+            });
+
+             _logger.LogInformation("Professor {UserId} created successfully.", professor!.User.Id);
+            return professor!.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<ProfessorInfoDto> GetProfessorAsync(Guid id)
+        {
+            var professor = await _repository
+                .Professor
+                .GetByIdAsync(id, x => x.User) ?? throw new NotFoundException($"Professor with id {id} not found.");
+            return professor.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<ProfessorInfoDto>> GetAllProfessorsAsync()
+        {
+            var professors = await _repository.Professor.GetAllUnfilteredAsync(x => x.User);
+            var professorDtos = new List<ProfessorInfoDto>();
+            foreach (var professor in professors)
+            {
+                professorDtos.Add(professor.ToDto());
+            }
+
+            return professorDtos;
+        }
+
+                /// <inheritdoc />
+        public async Task<IEnumerable<ProfessorInfoDto>> GetAllProfessorsUnfilteredAsync()
+        {
+            var professors = await _repository.Professor.GetAllUnfilteredAsync(x => x.User);
+            var professorDtos = new List<ProfessorInfoDto>();
+            foreach (var professor in professors)
+            {
+                professorDtos.Add(professor.ToDto());
+            }
+
+            return professorDtos;
+        }
+
+        public async Task<PagedResult<ProfessorInfoDto>> GetProfessorsPageAsync(int page = 1, int pageSize = 50, string? q = null)
+        {
+            var (items, total) = await _repository.Professor.GetPagedAsync(page, pageSize, q, x => x.User);
+            return new PagedResult<ProfessorInfoDto>
+            {
+                Items = items.Select(p => p.ToDto()).ToList(),
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = total
+            };
+        }
+
+        /// <inheritdoc />
+        public async Task<ProfessorInfoDto> UpdateProfessorAsync(Guid id, ProfessorDto professorDto)
+        {
+            var existingProfessor = await _repository.Professor.GetByIdAsync(id);
+            if (existingProfessor == null)
+                throw new NotFoundException($"Professor with id {id} not found.");
+
+            (var canUpdate, var msgUpdate) = await _validations.ProfessorValidator.CanUpdate(professorDto, id);
+            if (!canUpdate) throw new ArgumentException(msgUpdate);
+
+            existingProfessor = professorDto.ToEntity(existingProfessor);
+            
+           await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                await _userService.UpdateUserAsync(existingProfessor.UserId, professorDto);
+                await _repository.Professor.UpdateAsync(existingProfessor);
+                var desired = (professorDto.ProjectIds ?? Enumerable.Empty<string>()).Select(Guid.Parse);
+                await _repository.ProfessorProject.HandleByProfessor(desired, existingProfessor);
+                await _repository.CommitAsync();
+            });
+
+            return existingProfessor.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteProfessorAsync(Guid id)
+        {
+            var existingProfessor = await _repository.Professor.GetByIdAsync(id);
+            if (existingProfessor == null)
+                throw new NotFoundException($"Professor with id {id} not found.");
+
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                await _repository.Professor.DeactiveAsync(existingProfessor);
+                await _userService.DeleteUserAsync(existingProfessor.UserId);
+                await _repository.CommitAsync();
+            });
+        }
+    }
+}
+
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+using saga.Models.Mapper;
+using saga.Services.Interfaces;
+
+namespace saga.Services
+{
+    public class ProjectService : IProjectService
+    {
+        private readonly IRepository _repository;
+        private readonly ILogger<ProjectService> _logger;
+
+        public ProjectService(
+            IRepository repository,
+            ILogger<ProjectService> logger
+        )
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <inheritdoc />
+        public async Task<ProjectInfoDto> CreateProjectAsync(ProjectDto projectDto)
+        {
+            try
+            {
+                var project = projectDto.ToEntity();
+
+                var professorIds = projectDto.ProfessorIds.Select(x => Guid.Parse(x));
+
+                project = await _repository.Project.AddAsync(project);
+                await _repository.ProfessorProject.HandlesByProject(projectDto.ProfessorIds.Select(Guid.Parse), project);
+
+                _logger.LogInformation($"Project {project.Name} created successfully.");
+                return project.ToInfoDto();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation($"Project {projectDto.Name} as {ex}");
+                return projectDto.ToEntity().ToInfoDto();
+            };
+        }
+
+        /// <inheritdoc />
+        public async Task<ProjectInfoDto> GetProjectAsync(Guid id)
+        {
+            var projectEntity = await _repository
+                .Project
+                .GetByIdAsync(id);
+            if (projectEntity == null)
+            {
+                throw new ArgumentException("Project not found.");
+            }
+
+            return projectEntity.ToInfoDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<ProjectInfoDto>> GetAllProjectsAsync()
+        {
+            var projects = await _repository
+                .Project
+                .GetAllAsync();
+            var projectDtos = new List<ProjectInfoDto>();
+            foreach (var project in projects)
+            {
+                projectDtos.Add(project.ToInfoDto());
+            }
+
+            return projectDtos;
+        }
+
+        /// <inheritdoc />
+        public async Task<ProjectInfoDto> UpdateProjectAsync(Guid id, ProjectDto projectDto)
+        {
+            var existingProject = await _repository.Project.GetByIdAsync(id);
+            if (existingProject == null)
+            {
+                throw new ArgumentException($"Project with id {id} does not exist.");
+            }
+
+            existingProject = projectDto.ToEntity(existingProject);
+            await _repository.Project.UpdateAsync(existingProject);
+            await _repository.ProfessorProject.HandlesByProject(projectDto.ProfessorIds.Select(Guid.Parse), existingProject);
+
+            return existingProject.ToInfoDto();
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteProjectAsync(Guid id)
+        {
+            var existingProject = await _repository.Project.GetByIdAsync(id);
+            if (existingProject == null)
+            {
+                throw new ArgumentException($"Project with id {id} does not exist.");
+            }
+
+            await _repository.Project.DeactiveAsync(existingProject);
+        }
+    }
+}
+
+using saga.Infrastructure.Extensions;
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+using saga.Models.Mapper;
+using saga.Services.Interfaces;
+
+namespace saga.Services
+{
+    public class ResearchLineService : IResearchLineService
+    {
+        private readonly IRepository _repository;
+        private readonly ILogger<ResearchLineService> _logger;
+
+        public ResearchLineService(
+            IRepository repository,
+            ILogger<ResearchLineService> logger
+        )
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <inheritdoc />
+        public async Task<ResearchLineInfoDto> CreateResearchLineAsync(ResearchLineDto researchLineDto)
+        {
+            try
+            {
+                var researchLine = researchLineDto.ToEntity();
+
+                researchLine = await _repository.ResearchLine.AddAsync(researchLine);
+
+                _logger.LogInformation($"ResearchLine {researchLine.Name} created successfully.");
+                return researchLine.ToDto();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation($"ResearchLine {researchLineDto.Name} as {ex}");
+                return researchLineDto.ToEntity().ToDto();
+            };
+        }
+
+        /// <inheritdoc />
+        public async Task<ResearchLineInfoDto> GetResearchLineAsync(Guid id)
+        {
+            var researchLineEntity = await _repository
+                .ResearchLine
+                .GetByIdAsync(id, x => x.Projects);
+            if (researchLineEntity == null)
+            {
+                throw new ArgumentException("ResearchLine not found.");
+            }
+
+            return researchLineEntity.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<ResearchLineInfoDto>> GetAllResearchLinesAsync()
+        {
+            var researchLines = await _repository
+                .ResearchLine
+                .GetAllAsync(x => x.Projects);
+            var researchLineDtos = new List<ResearchLineInfoDto>();
+            foreach (var researchLine in researchLines)
+            {
+                researchLineDtos.Add(researchLine.ToDto());
+            }
+
+            return researchLineDtos;
+        }
+
+        /// <inheritdoc />
+        public async Task<ResearchLineInfoDto> UpdateResearchLineAsync(Guid id, ResearchLineDto researchLineDto)
+        {
+            var existingResearchLine = await _repository.ResearchLine.GetByIdAsync(id);
+            if (existingResearchLine == null)
+            {
+                throw new ArgumentException($"ResearchLine with id {id} does not exist.");
+            }
+
+            existingResearchLine = researchLineDto.ToEntity(existingResearchLine);
+            await _repository.ResearchLine.UpdateAsync(existingResearchLine);
+
+            return existingResearchLine.ToDto();
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteResearchLineAsync(Guid id)
+        {
+            var existingResearchLine = await _repository.ResearchLine.GetByIdAsync(id);
+            if (existingResearchLine == null)
+            {
+                throw new ArgumentException($"ResearchLine with id {id} does not exist.");
+            }
+
+            await _repository.ResearchLine.DeactiveAsync(existingResearchLine);
+        }
+    }
+}
+
+using saga.Infrastructure.Repositories;
+using saga.Models.DTOs;
+using saga.Models.Entities;
+using saga.Models.Mapper;
+using CsvHelper;
+using System.Globalization;
+using saga.Services.Interfaces;
+using System.ComponentModel.DataAnnotations;
+using saga.Models.DTOs.Common;
+using saga.Infrastructure.Validations;
+using saga.Infrastructure.Exceptions;
+
+
+namespace saga.Services
+{
+    public class StudentService : IStudentService
+    {
+        private readonly IRepository _repository;
+        private readonly ILogger<StudentService> _logger;
+        private readonly IUserService _userService;
+        private readonly Validations _validations;
+
+        public StudentService(
+            IRepository repository,
+            ILogger<StudentService> logger,
+            IUserService userService,
+            Validations validations
+        )
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _validations = validations ?? throw new ArgumentNullException(nameof(validations));
+        }
+
+        /// <inheritdoc />
+        public async Task<StudentInfoDto> CreateStudentAsync(StudentDto studentDto)
+        {
+            (var canCreate, var msgCreate) = await _validations.StudentValidator.CanCreate(studentDto);
+            if (!canCreate) throw new ArgumentException(msgCreate);
+
+            StudentEntity? student = null;
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                var user = await _userService.CreateUserAsync(studentDto);
+                student = await _repository.Student.AddAsync(studentDto.ToEntity(user.Id));
+                await _repository.CommitAsync();
+            });
+
+            _logger.LogInformation("Student {Email} created successfully.", studentDto.Email);
+            return student!.ToInfoDto();
+         }
+
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<StudentInfoDto>> AddStudentsFromCsvAsync(IFormFile file)
+        {
+            var insertedStudents = new List<StudentInfoDto>();
+            await foreach (var record in CastFromCsvAsync<StudentCsvDto>(file))
+            {
+                try
+                {
+                    var insertedStudent = await CreateStudentAsync(record.ToDto());
+                    insertedStudents.Add(insertedStudent);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex.Message);
+                }
+            }
+
+            return insertedStudents;
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<StudentCourseDto>> AddCoursesToStudentsFromCsvAsync(IFormFile file)
+        {
+            var insertedCourses = new List<StudentCourseDto>();
+
+            var records = CastFromCsvAsync<StudentCourseCsvDto>(file);
+            var courseNames = await records.Select(x => x.CourseUnique).ToListAsync();
+            var courses = await _repository.Course.GetAllAsync(x => courseNames.Contains(x.CourseUnique));
+            var courseDictionary = courses?.ToDictionary(x => x.CourseUnique, x => x.Id);
+
+            var studentRegistrations = await records.Select(x => x.StudentRegistration).ToListAsync();
+            var students = await _repository.Student.GetAllAsync(x => studentRegistrations.Contains(x.Registration));
+            var studentDictionary = students?.ToDictionary(x => x.Registration, x => x.Id);
+
+            await foreach (var record in records)
+            {
+                if (studentDictionary.TryGetValue(record.StudentRegistration, out var student) &&
+                    courseDictionary.TryGetValue(record.CourseUnique, out var courseId))
+                {
+                    var course = await _repository.StudentCourse.AddAsync(record.ToDto(courseId, student).ToEntity());
+                    insertedCourses.Add(course.ToDto());
+                }
+                else
+                {
+                    _logger.LogWarning($"Failed to add course to student: {record.StudentRegistration} - {record.CourseName}");
+                }
+            }
+
+            return insertedCourses;
+        }
+
+        /// <inheritdoc />
+        public async Task<StudentInfoDto> GetStudentAsync(Guid id)
+        {
+            var studentEntity = await _repository.Student.GetByIdAsync(id, s => s.User, s => s.Project);
+            if (studentEntity == null)
+                throw new NotFoundException($"Student with id {id} not found.");
+
+            return studentEntity.ToInfoDto();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<StudentInfoDto>> GetAllStudentsAsync()
+        {
+            var students = await _repository.Student.GetAllAsync(s => s.User);
+            var studentDtos = students.Select(student => student.ToInfoDto());
+            return studentDtos;
+        }
+
+        public async Task<PagedResult<StudentInfoDto>> GetStudentsPageAsync(int page = 1, int pageSize = 50, string? q = null)
+        {
+            var (items, total) = await _repository.Student.GetPagedAsync(page, pageSize, q, s => s.User);
+            return new PagedResult<StudentInfoDto>
+            {
+                Items = items.Select(s => s.ToInfoDto()).ToList(),
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = total
+            };
+        }
+
+        /// <inheritdoc />
+        public async Task<StudentInfoDto> UpdateStudentAsync(Guid id, StudentDto studentDto)
+        {
+            var existingStudent = await _repository
+                .Student
+                .GetByIdAsync(id, s => s.User) ?? throw new NotFoundException($"Student with id {id} not found.");
+            
+            (var canUpdate, var msgUpdate) = await _validations.StudentValidator.CanUpdate(studentDto, id);
+            if (!canUpdate) throw new ArgumentException(msgUpdate);
+
+            existingStudent = studentDto.ToEntity(existingStudent);
+            
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                await _userService.UpdateUserAsync(existingStudent.UserId, studentDto);
+                await _repository.Student.UpdateAsync(existingStudent);
+                await _repository.CommitAsync();
+            });
+            
+            return existingStudent.ToInfoDto();
+        }
+
+        /// <inheritdoc />
+        public async Task DeleteStudentAsync(Guid id)
+        {
+            var existingStudent = await GetExistingStudentAsync(id);
+            await _repository.ExecuteInTransactionAsync(async () =>
+            {
+                await _repository.Student.DeactiveAsync(existingStudent);
+                await _userService.DeleteUserAsync(existingStudent.UserId);
+                await _repository.CommitAsync();
+            });
+        }
+
+        private async Task<StudentEntity> GetExistingStudentAsync(Guid id)
+        {
+            var existingStudent = await _repository.Student.GetByIdAsync(id);
+            if (existingStudent == null)
+                throw new NotFoundException($"Student with id {id} not found.");
+            return existingStudent;
+        }
+
+        private async IAsyncEnumerable<TDTO> CastFromCsvAsync<TDTO>(IFormFile file)
+            where TDTO : class
+        {
+            using var reader = new StreamReader(file.OpenReadStream());
+            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            var records = await csv.GetRecordsAsync<TDTO>().ToListAsync();
+
+            foreach (var record in records)
+            {
+                if (TryValidateCsvRecord(record, out var errorMessages))
+                {
+                    yield return record;
+                }
+                else
+                {
+                    _logger.LogWarning($"Validation failed for record: {string.Join(", ", errorMessages)}");
+                }
+            }
+        }
+
+        private bool TryValidateCsvRecord(object record, out List<string> errorMessages)
+        {
+            var validationContext = new ValidationContext(record);
+            var validationResults = new List<ValidationResult>();
+
+            var isValid = Validator.TryValidateObject(record, validationContext, validationResults, true);
+            errorMessages = isValid
+                ? new List<string>()
+                : validationResults.Select(result => result.ErrorMessage).ToList();
+
+            return isValid;
+        }
+    }
+}
+
+using Infrastructure.EmailTemplates;
+using saga.Infrastructure.Providers;
+using saga.Infrastructure.Providers.Interfaces;
+using saga.Infrastructure.Repositories;
+using saga.Infrastructure.Validations;
+using saga.Models.DTOs;
+using saga.Models.Entities;
+using saga.Models.Mapper;
+using saga.Properties;
+using saga.Services.Interfaces;
+
+namespace saga.Services
+{
+    public class UserService : IUserService
+    {
+        private readonly IRepository _repository;
+        private readonly IEmailSender _emailSender;
+        private readonly ITokenProvider _tokenProvider;
+        private readonly IUserContext _userContext;
+        private readonly ILogger<UserService> _logger;
+        private readonly Validations _validations;
+        public UserService(
+            IRepository repository,
+            ITokenProvider tokenProvider,
+            ILogger<UserService> logger,
+            IEmailSender emailSender,
+            Validations validations,
+            IUserContext userContext
+        )
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
+            _validations = validations ?? throw new ArgumentNullException(nameof(validations));
+            _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
+        }
+
+        /// <inheritdoc />
+        public async Task<UserEntity> CreateUserAsync(UserDto userDto)
+        {
+            (var isValid, var message) = await _validations.UserValidator.CanAddUser(userDto);
+
+            _logger.LogInformation($"Creating user with email: {userDto.Email}");
+
+            var existingUser = await _repository.User.GetUserByEmail(userDto.Email);
+            if (existingUser != null)
+            {
+                await _repository.User.ActivateAsync(existingUser);
+                _logger.LogInformation($"User {userDto.Email} already exists, reactivating.");
+                return existingUser;
+            }
+
+            _logger.LogInformation($"Creating user{userDto.Email}");
+            if (!isValid)
+            {
+                throw new ArgumentException(message);
+            }
+
+            var user = await _repository.User.AddAsync(userDto.ToUserEntity());
+            var token = _tokenProvider.GenerateResetPasswordJwt(user, TimeSpan.FromDays(7));
+            string emailSubject = "Sua conta foi criada";
+            string emailBody = EmailTemplates.WelcomeEmailTemplate(userDto.ResetPasswordPath, token);
+            await _emailSender.SendEmail(userDto.Email, emailSubject, emailBody).ConfigureAwait(false);
+
+            return user;
+        }
+
+        /// <inheritdoc />
+        public async Task<UserEntity> UpdateUserAsync(Guid id, UserDto userDto)
+        {
+            var existingUser = await _repository
+                .User
+                .GetByIdAsync(id) ?? throw new ArgumentException($"User with id {id} not found.");
+            existingUser = userDto.ToUserEntity(existingUser);
+            await _repository.User.UpdateAsync(existingUser);
+
+            _logger.LogInformation($"User {existingUser.Email} updated successfully. New data: {string.Join(", ", userDto.GetType().GetProperties().Select(p => $"{p.Name}: {p.GetValue(userDto)}"))}");
+
+            return existingUser;
+        }
+
+        /// <inheritdoc />
+        public async Task<UserEntity> DeleteUserAsync(Guid id)
+        {
+            var existingUser = await _repository
+                .User
+                .GetByIdAsync(id) ?? throw new ArgumentException($"User with id {id} not found.");
+            await _repository.User.DeactiveAsync(existingUser);
+            _logger.LogInformation($"User {existingUser.Email} deactivated successfully.");
+            return existingUser;
+        }
+
+        /// <inheritdoc />
+        public async Task ResetPasswordRequestAsync(RequestResetPasswordDto request)
+        {
+            var user = await _repository.User.GetUserByEmail(request.Email) ?? throw new ArgumentException($"User with email {request.Email} not found.");
+
+            var token = _tokenProvider.GenerateResetPasswordJwt(user, TimeSpan.FromMinutes(30));
+            string emailSubject = "Alteração de senha";
+            string emailBody = EmailTemplates.ResetPasswordEmailTemplate(request.ResetPasswordPath, token);
+            await _emailSender.SendEmail(request.Email, emailSubject, emailBody).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<LoginResultDto> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
+        {
+            (var isValid, var message) = await _validations.UserValidator.CanResetPassword(resetPasswordDto);
+
+            if (!isValid)
+            {
+                throw new ArgumentException(message);
+            }
+            var user = await _repository.User.GetByIdAsync(_userContext.UserId.Value) ?? throw new ArgumentException($"User with email {_userContext.UserId} not found.");
+
+            _logger.LogInformation($"Changing password of user: {user.Email}");
+            user.PasswordHash = HashPassword(resetPasswordDto.Password);
+
+            await _repository.User.UpdateAsync(user);
+
+            var jwtToken = _tokenProvider.GenerateJwtToken(user);
+
+            return user.ToDto(jwtToken);
+        }
+
+
+        /// <inheritdoc />
+        public async Task<LoginResultDto> AuthenticateAsync(LoginDto loginDto)
+        {
+            var user = await _repository.User.GetUserByEmail(loginDto.Email.ToLower());
+            if (user == null)
+            {
+                throw new ArgumentException($"User with email {loginDto.Email} not found.");
+            }
+
+            if (!VerifyPassword(loginDto.Password ?? "", user.PasswordHash ?? ""))
+            {
+                throw new ArgumentException("Invalid password.");
+            }
+
+            return user.ToDto(_tokenProvider.GenerateJwtToken(user));
+        }
+
+        private string HashPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
+        }
+
+        private bool VerifyPassword(string password, string passwordHash)
+        {
+            return BCrypt.Net.BCrypt.Verify(password, passwordHash);
+        }
+    }
+}

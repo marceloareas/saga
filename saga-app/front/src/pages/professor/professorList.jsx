@@ -60,6 +60,12 @@ export default function ProfessorList() {
             }).catch(()=> setIsLoading(false))
     }
 
+    useEffect(() => { fetchPage({ page: 1 }) }, [])
+
+    const onSearch = () => fetchPage({ page: 1, q })
+    const prev = () => page > 1 && fetchPage({ page: page - 1 })
+    const next = () => page < totalPages && fetchPage({ page: page + 1 })
+
 
     return (<PageContainer name={name} isLoading={isLoading}>
         <div className="bar professorBar">

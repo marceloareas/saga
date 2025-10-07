@@ -1,4 +1,3 @@
-using backend.Infrastructure.Validations;
 using Infrastructure.EmailTemplates;
 using saga.Infrastructure.Providers;
 using saga.Infrastructure.Providers.Interfaces;

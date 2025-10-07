@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
-using backend.Infrastructure.Validations;
+using saga.Infrastructure.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -125,10 +125,21 @@ RecurringJob.AddOrUpdate<StudentsFinishing>("daily-job", x => x.ExecuteAsync(nul
 
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ContexRepository>();
+    db.Database.Migrate();
+}
+
+
 app.Run();
 
 void RegisterValidations(IServiceCollection services)
 {
+    services.AddScoped<UserValidator>();
+    services.AddScoped<OrientationValidator>();
+    services.AddScoped<StudentValidator>();
+    services.AddScoped<ProfessorValidator>();
     services.AddScoped<Validations>();
 }
 

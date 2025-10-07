@@ -58,7 +58,7 @@ namespace saga.Infrastructure.Repositories.Professor
             {
                 var term = q.Trim().ToLower();
                 query = query.Where(p =>
-                    (p.User != null && p.User.Name.ToLower().Contains(term)) ||
+                    (p.User != null && p.User.LastName.ToLower().Contains(term)) ||
                     (p.User != null && p.User.Email.ToLower().Contains(term))
                 );
              }
@@ -68,7 +68,7 @@ namespace saga.Infrastructure.Repositories.Professor
 
             var total = await query.CountAsync();
             var items = await query
-                .OrderBy(p => p.User!.Name)
+                .OrderBy(p => p.User!.LastName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

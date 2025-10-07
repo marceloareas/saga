@@ -75,7 +75,7 @@ namespace saga.Infrastructure.Repositories.Student
              {
                  var term = q.Trim().ToLower();
                  query = query.Where(s =>
-                     (s.User != null && s.User.Name.ToLower().Contains(term)) ||
+                     (s.User != null && s.User.LastName.ToLower().Contains(term)) ||
                      (s.Registration != null && s.Registration.ToLower().Contains(term)) ||
                      (s.User != null && s.User.Email.ToLower().Contains(term))
                  );
@@ -86,7 +86,7 @@ namespace saga.Infrastructure.Repositories.Student
 
              var total = await query.CountAsync();
              var items = await query
-                 .OrderBy(s => s.User!.Name) // ordenação previsível
+                 .OrderBy(s => s.User!.LastName) // ordenação previsível
                  .Skip((page - 1) * pageSize)
                  .Take(pageSize)
                  .ToListAsync();

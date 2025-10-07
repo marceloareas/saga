@@ -3,6 +3,10 @@ using saga.Models.DTOs;
 using saga.Models.Mapper;
 using saga.Services.Interfaces;
 using saga.Models.DTOs.Common;
+using saga.Infrastructure.Validations;
+using saga.Infrastructure.Exceptions;
+using saga.Models.Entities;
+
 
 namespace saga.Services
 {

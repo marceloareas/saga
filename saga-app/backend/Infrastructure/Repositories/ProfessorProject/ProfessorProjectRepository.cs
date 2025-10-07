@@ -52,7 +52,7 @@ namespace saga.Infrastructure.Repositories.ProfessorProject
             ));
 
             await this.DeactiveRangeAsync(entity =>
-                entity.ProfessorId == professor.Id &&
+                entity.ProfessorId == Professor.Id &&
                 professorProjectIdsToDelete.Contains(entity.ProjectId)
             );
         }

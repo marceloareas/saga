@@ -143,4 +143,5 @@ namespace saga.Controllers
             var result = await _studentService.GetStudentsPageAsync(page, pageSize, q);
             return Ok(result);
         }
+    }
 }
