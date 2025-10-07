@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import '../../styles/professorList.scss';
 import Table from "../../components/Table/table"
-import { getProfessors } from "../../api/professor_service"
+import { getProfessors, getProfessorsPaged } from "../../api/professor_service"
 import { useNavigate } from "react-router"
 import jwt_decode from "jwt-decode";
 import BackButton from "../../components/BackButton";
@@ -13,6 +13,10 @@ export default function ProfessorList() {
     const [role, setRole] = useState(localStorage.getItem('role'))
     const [isLoading, setIsLoading] = useState(true)
     const [professors, setProfessors] = useState([])
+    const [q, setQ] = useState("")
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(20)
+    const [totalPages, setTotalPages] = useState(1)
 
     const detailsCallback = (id)=>
     {
@@ -33,14 +37,14 @@ export default function ProfessorList() {
         }
     }, [setRole, navigate, role]);
 
-    useEffect(() => {
-        getProfessors()
+    const fetchPage = ({ page: p = page, pageSize: ps = pageSize, q: query = q } = {}) => {
+        setIsLoading(true)
+        return getProfessorsPaged({ page: p, pageSize: ps, q: query })
             .then(result => {
                 console.log(result)
                 let mapped = []
-                if (result !== null && result !== undefined) {
-                    console.log(result)
-                    mapped = result.map((professor) => {
+                if (result && result.items) {
+                    mapped = result.items.map((professor) => {
                         return {
                             Id: professor.id,
                             Nome: `${professor.firstName} ${professor.lastName}`,
@@ -50,9 +54,11 @@ export default function ProfessorList() {
                     })
                 }
                 setProfessors(mapped)
+                if (result?.totalPages) setTotalPages(result.totalPages)
+                if (result?.page) setPage(result.page)
                 setIsLoading(false)
-            })
-    }, [setProfessors, setIsLoading])
+            }).catch(()=> setIsLoading(false))
+    }
 
 
     return (<PageContainer name={name} isLoading={isLoading}>
@@ -65,8 +71,15 @@ export default function ProfessorList() {
             </div>
             <div className="right-bar">
                 <div className="search">
-                    <input type="search" name="search" id="search" />
-                    <i className="fas fa-"/>
+                    <input
+                      type="search"
+                      name="search"
+                      id="search"
+                      value={q}
+                      onChange={(e)=>setQ(e.target.value)}
+                      placeholder="Buscar por nome/email"
+                    />
+                    <button onClick={onSearch}>Buscar</button>
                 </div>
                 <div className="create-button">
                     <button onClick={() => ''}>Mostrar inativos</button>
@@ -78,6 +91,11 @@ export default function ProfessorList() {
         </div>
         <BackButton />
         {!isLoading && <Table data={professors} useOptions={true} detailsCallback={detailsCallback} />}
+        <div style={{display:'flex', gap:8, justifyContent:'flex-end', marginTop:12}}>
+          <button disabled={page<=1} onClick={prev}>Anterior</button>
+          <span>Página {page} de {totalPages}</span>
+          <button disabled={page>=totalPages} onClick={next}>Próxima</button>
+        </div>
     </PageContainer>
 )
 }

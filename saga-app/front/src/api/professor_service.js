@@ -8,6 +8,10 @@ export async function getProfessorById(id){
     return (await api.get(`professors/${id}`))?.data
 }
 
+export async function getProfessorsPaged({ page = 1, pageSize = 20, q = "" } = {}) {
+  return (await api.get("professors/paged", { params: { page, pageSize, q } }))?.data;
+}
+
 export async function deleteProfessor(id){
     return (await api.delete(`professors/${id}`))
 }
