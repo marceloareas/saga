@@ -1,5 +1,6 @@
 using saga.Models.DTOs;
 using saga.Models.Entities;
+using saga.Models.DTOs.Common;
 
 namespace saga.Services.Interfaces
 {
@@ -62,5 +63,11 @@ namespace saga.Services.Interfaces
         /// </summary>
         /// <returns>A list of all student entities.</returns>
         Task<IEnumerable<StudentInfoDto>> GetAllStudentsAsync();
+
+        /// <summary>
+        /// Lista paginada de estudantes (com busca simples).
+        /// </summary>
+        Task<PagedResult<StudentInfoDto>> GetStudentsPageAsync(int page = 1, int pageSize = 50, string? q = null);
+
     }
 }

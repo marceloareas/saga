@@ -2,6 +2,7 @@ using saga.Infrastructure.Repositories;
 using saga.Models.DTOs;
 using saga.Models.Mapper;
 using saga.Services.Interfaces;
+using saga.Models.DTOs.Common;
 
 namespace saga.Services
 {
@@ -79,6 +80,18 @@ namespace saga.Services
             }
 
             return professorDtos;
+        }
+
+        public async Task<PagedResult<ProfessorInfoDto>> GetProfessorsPageAsync(int page = 1, int pageSize = 50, string? q = null)
+        {
+            var (items, total) = await _repository.Professor.GetPagedAsync(page, pageSize, q, x => x.User);
+            return new PagedResult<ProfessorInfoDto>
+            {
+                Items = items.Select(p => p.ToDto()).ToList(),
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = total
+            };
         }
 
         /// <inheritdoc />

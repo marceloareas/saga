@@ -6,6 +6,7 @@ using CsvHelper;
 using System.Globalization;
 using saga.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;
+using saga.Models.DTOs.Common;
 
 namespace saga.Services
 {
@@ -115,6 +116,18 @@ namespace saga.Services
             var students = await _repository.Student.GetAllAsync(s => s.User);
             var studentDtos = students.Select(student => student.ToInfoDto());
             return studentDtos;
+        }
+
+        public async Task<PagedResult<StudentInfoDto>> GetStudentsPageAsync(int page = 1, int pageSize = 50, string? q = null)
+        {
+            var (items, total) = await _repository.Student.GetPagedAsync(page, pageSize, q, s => s.User);
+            return new PagedResult<StudentInfoDto>
+            {
+                Items = items.Select(s => s.ToInfoDto()).ToList(),
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = total
+            };
         }
 
         /// <inheritdoc />

@@ -41,5 +41,39 @@ namespace saga.Infrastructure.Repositories.Professor
             entityToDelete.IsDeleted = true;
             await UpdateAsync(entityToDelete);
         }
-    }
+
+        public async Task<(IReadOnlyList<ProfessorEntity> Items, int TotalCount)> GetPagedAsync(
+             int page,
+             int pageSize,
+             string? q = null,
+             params Expression<Func<ProfessorEntity, object>>[] includes
+         )
+         {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 50;
+
+            IQueryable<ProfessorEntity> query = _dbSet.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(p =>
+                    (p.User != null && p.User.Name.ToLower().Contains(term)) ||
+                    (p.User != null && p.User.Email.ToLower().Contains(term))
+                );
+             }
+
+            foreach (var include in includes ?? Array.Empty<Expression<Func<ProfessorEntity, object>>>())
+                query = query.Include(include);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderBy(p => p.User!.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);         
+        }
+     }
 }

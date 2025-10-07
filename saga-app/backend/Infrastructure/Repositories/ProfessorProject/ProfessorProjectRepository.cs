@@ -27,7 +27,10 @@ namespace saga.Infrastructure.Repositories.ProfessorProject
                     ProjectId = Project.Id
                 }
             ));
-            await this.DeactiveRangeAsync(entity => professorProjectIdsToDelete.Contains(entity.ProfessorId));
+            await this.DeactiveRangeAsync(entity =>
+                entity.ProjectId == Project.Id &&
+                professorProjectIdsToDelete.Contains(entity.ProfessorId)
+            );
         }
 
         /// <inheritdoc />
@@ -43,12 +46,15 @@ namespace saga.Infrastructure.Repositories.ProfessorProject
             await this.AddRangeAsync(professorProjectIds.Select(
                 x => new ProfessorProjectEntity
                 {
-                    ProfessorId = Professor.UserId,
+                    ProfessorId = Professor.Id,
                     ProjectId = x
                 }
             ));
 
-            await this.DeactiveRangeAsync(entity => professorProjectIdsToDelete.Contains(entity.ProfessorId));
+            await this.DeactiveRangeAsync(entity =>
+                entity.ProfessorId == professor.Id &&
+                professorProjectIdsToDelete.Contains(entity.ProjectId)
+            );
         }
     }
 }

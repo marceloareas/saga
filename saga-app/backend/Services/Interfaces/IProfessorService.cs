@@ -1,4 +1,5 @@
 using saga.Models.DTOs;
+using saga.Models.DTOs.Common;
 
 namespace saga.Services.Interfaces
 {
@@ -28,6 +29,11 @@ namespace saga.Services.Interfaces
         /// </summary>
         /// <returns>A list of all professor entities.</returns>
         Task<IEnumerable<ProfessorInfoDto>> GetAllProfessorsAsync();
+
+        /// <summary>
+        /// Lista paginada de professores (com busca simples).
+        /// </summary>
+        Task<PagedResult<ProfessorInfoDto>> GetProfessorsPageAsync(int page = 1, int pageSize = 50, string? q = null);
 
         /// <summary>
         /// Updates a professor.
