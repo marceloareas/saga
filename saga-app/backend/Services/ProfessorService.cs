@@ -10,26 +10,32 @@ namespace saga.Services
         private readonly IRepository _repository;
         private readonly ILogger<ProfessorService> _logger;
         private readonly IUserService _userService;
+        private readonly Validations _validations;
+
 
         public ProfessorService(
             IRepository repository,
             ILogger<ProfessorService> logger,
-            IUserService userService
+            IUserService userService,
+            Validations validations
         )
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _validations = validations ?? throw new ArgumentNullException(nameof(validations));
         }
 
         /// <inheritdoc />
         public async Task<ProfessorInfoDto> CreateProfessorAsync(ProfessorDto professorDto)
         {
+            (var canCreate, var msgCreate) = await _validations.ProfessorValidator.CanCreate(professorDto);
+            if (!canCreate) throw new ArgumentException(msgCreate);
             var user = await _userService.CreateUserAsync(professorDto);
             var professor = professorDto.ToEntity(user.Id);
             professor = await _repository.Professor.AddAsync(professor);
-            if (professorDto.ProjectIds.Any())
-                await _repository.ProfessorProject.HandleByProfessor(professorDto.ProjectIds.Select(Guid.Parse), professor);
+            var desired = (professorDto.ProjectIds ?? Enumerable.Empty<string>()).Select(Guid.Parse);
+            await _repository.ProfessorProject.HandleByProfessor(desired, professor);
 
             _logger.LogInformation($"Professor {professor.User.Id} created successfully.");
             return professor.ToDto();
@@ -40,7 +46,7 @@ namespace saga.Services
         {
             var professor = await _repository
                 .Professor
-                .GetByIdAsync(id, x => x.User) ?? throw new ArgumentException("Professor not found.");
+                .GetByIdAsync(id, x => x.User) ?? throw new NotFoundException($"Professor with id {id} not found.");
             return professor.ToDto();
         }
 
@@ -75,17 +81,18 @@ namespace saga.Services
         {
             var existingProfessor = await _repository.Professor.GetByIdAsync(id);
             if (existingProfessor == null)
-            {
-                throw new ArgumentException($"Professor with id {id} does not exist.");
-            }
+                throw new NotFoundException($"Professor with id {id} not found.");
+
+            (var canUpdate, var msgUpdate) = await _validations.ProfessorValidator.CanUpdate(professorDto, id);
+            if (!canUpdate) throw new ArgumentException(msgUpdate);
 
             existingProfessor = professorDto.ToEntity(existingProfessor);
             
             await _userService.UpdateUserAsync(existingProfessor.UserId, professorDto);
             await _repository.Professor.UpdateAsync(existingProfessor);
             
-            if (professorDto.ProjectIds.Any())
-                await _repository.ProfessorProject.HandleByProfessor(professorDto.ProjectIds.Select(Guid.Parse), existingProfessor);
+            var desired = (professorDto.ProjectIds ?? Enumerable.Empty<string>()).Select(Guid.Parse);
+            await _repository.ProfessorProject.HandleByProfessor(desired, existingProfessor);
 
             return existingProfessor.ToDto();
         }
@@ -95,9 +102,7 @@ namespace saga.Services
         {
             var existingProfessor = await _repository.Professor.GetByIdAsync(id);
             if (existingProfessor == null)
-            {
-                throw new ArgumentException($"Professor with id {id} does not exist.");
-            }
+                throw new NotFoundException($"Professor with id {id} not found.");
 
             await _repository.Professor.DeactiveAsync(existingProfessor);
             await _userService.DeleteUserAsync(existingProfessor.UserId);

@@ -21,6 +21,8 @@ namespace saga.Services.Interfaces
         /// <returns>The professor DTO with the specified ID.</returns>
         Task<ProfessorInfoDto> GetProfessorAsync(Guid id);
 
+        Task<IEnumerable<ProfessorInfoDto>> GetAllProfessorsUnfilteredAsync();
+
         /// <summary>
         /// Gets a list of all professor entities.
         /// </summary>
