@@ -3,6 +3,7 @@ using saga.Infrastructure.Extensions;
 using saga.Infrastructure.Providers;
 using saga.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace saga.Infrastructure.Repositories.Student
 {
@@ -19,9 +20,11 @@ namespace saga.Infrastructure.Repositories.Student
         public override async Task<StudentEntity?> GetByIdAsync(Guid id)
         {
             return await _dbSet
+                .AsNoTracking()
                 .Where(e => !e.IsDeleted)
-                .FilterByUserRole(_userContext)
-                .FirstOrDefaultAsync(e => e.UserId == id);
+                .Include(s => s.User)
+                .FilterByUserRoleOrNoop(_userContext)
+                .FirstOrDefaultAsync(e => e.Id == id); // <<< Usa Student.Id
         }
 
         /// <inheritdoc />
@@ -30,27 +33,32 @@ namespace saga.Infrastructure.Repositories.Student
             params Expression<Func<StudentEntity, object>>[] includeProperties)
         {
             return await _dbSet
+                .AsNoTracking()
                 .Where(e => !e.IsDeleted)
                 .IncludeMultiple(includeProperties)
-                .FilterByUserRole(_userContext)
-                .SingleOrDefaultAsync(p => p.UserId == id);
+                .FilterByUserRoleOrNoop(_userContext)
+                .SingleOrDefaultAsync(p => p.Id == id); // <<< Usa Student.Id
         }
 
         /// <inheritdoc />
         public override async Task<IEnumerable<StudentEntity>> GetAllAsync(
             params Expression<Func<StudentEntity, object>>[] includeProperties)
         {
-            return await _dbSet
+            IQueryable<StudentEntity> q = _dbSet
+                .AsNoTracking()
                 .Where(e => !e.IsDeleted)
-                .FilterByUserRole(_userContext)
-                .IncludeMultiple(includeProperties)
-                .ToListAsync();
+                .IncludeMultiple(includeProperties);
+
+            q = q.FilterByUserRoleOrNoop(_userContext);
+
+            return await q.ToListAsync();
         }
 
         /// <inheritdoc />
         public override async Task DeactiveByIdAsync(Guid id)
         {
-            StudentEntity? entityToDelete = await _dbSet.FirstAsync(x => x.UserId == id);
+            // Desativar por Student.Id
+            var entityToDelete = await _dbSet.FirstOrDefaultAsync(x => x.Id == id);
             if (entityToDelete == null)
                 throw new ArgumentNullException(nameof(entityToDelete));
 
@@ -64,34 +72,37 @@ namespace saga.Infrastructure.Repositories.Student
             string? q = null,
             params Expression<Func<StudentEntity, object>>[] includes
          )
-         {
-             if (page < 1) page = 1;
-             if (pageSize < 1) pageSize = 50;
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 50;
 
-             IQueryable<StudentEntity> query = _dbSet.AsNoTracking();
+            IQueryable<StudentEntity> query = _dbSet
+                .AsNoTracking()
+                .Where(s => !s.IsDeleted)
+                .FilterByUserRoleOrNoop(_userContext);
 
-             // busca simples por nome/registro/email (ajuste os campos conforme sua entidade)
-             if (!string.IsNullOrWhiteSpace(q))
-             {
-                 var term = q.Trim().ToLower();
-                 query = query.Where(s =>
-                     (s.User != null && s.User.LastName.ToLower().Contains(term)) ||
-                     (s.Registration != null && s.Registration.ToLower().Contains(term)) ||
-                     (s.User != null && s.User.Email.ToLower().Contains(term))
-                 );
-             }
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(s =>
+                    (s.User != null && s.User.LastName.ToLower().Contains(term)) ||
+                    (s.Registration != null && s.Registration.ToLower().Contains(term)) ||
+                    (s.User != null && s.User.Email.ToLower().Contains(term))
+                );
+            }
 
-             foreach (var include in includes ?? Array.Empty<Expression<Func<StudentEntity, object>>>())
-                 query = query.Include(include);
+            foreach (var include in includes ?? Array.Empty<Expression<Func<StudentEntity, object>>>())
+                query = query.Include(include);
 
-             var total = await query.CountAsync();
-             var items = await query
-                 .OrderBy(s => s.User!.LastName) // ordenação previsível
-                 .Skip((page - 1) * pageSize)
-                 .Take(pageSize)
-                 .ToListAsync();
+            var total = await query.CountAsync();
 
-             return (items, total);
-         }
-     }
+            var items = await query
+                .OrderBy(s => s.User!.LastName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, total);
+        }
+    }
 }

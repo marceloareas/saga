@@ -10,7 +10,6 @@ namespace saga.Models.DTOs
 
         public DateTime? RegistrationDate { get; set; }
 
-        [Required(ErrorMessage = "ProjectId is required")]
         public Guid? ProjectId { get; set; }
 
         public StatusEnum Status { get; set; }

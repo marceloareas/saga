@@ -17,11 +17,12 @@ using saga.Infrastructure.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("CorsPolicy", builder =>
+    options.AddPolicy("CorsPolicy", policy =>
     {
-        builder
+        policy
             .AllowAnyOrigin()
             .AllowAnyMethod()
             .AllowAnyHeader();
@@ -31,6 +32,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddAuthorization();
 
+// Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Saga", Version = "v1" });
@@ -48,6 +50,7 @@ builder.Services.AddSwaggerGen(c =>
     c.DocumentFilter<BasePathDocumentFilter>();
 });
 
+// Controllers & JSON (enums as strings)
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -58,10 +61,17 @@ var connectionString = $"Host={settings.PostgresServer};Username={settings.Postg
 
 var signingConfig = new SigningConfiguration(settings.SinginKey);
 
+// DbContext (+dev diagnostics)
 builder.Services.AddDbContext<ContexRepository>(options =>
 {
     options.UseNpgsql(connectionString);
+#if DEBUG
+    options.EnableSensitiveDataLogging();   // log SQL params (DEV only)
+    options.EnableDetailedErrors();         // richer EF exceptions (DEV only)
+#endif
 }, ServiceLifetime.Scoped);
+
+// DI
 builder.Services.AddScoped<ITokenProvider, TokenProvider>();
 builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddSingleton<ISigningConfiguration>(signingConfig);
@@ -70,8 +80,10 @@ builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 RegisterValidations(builder.Services);
 RegisterServices(builder.Services);
+
 builder.Services.AddAuthorization();
 
+// Auth
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -85,16 +97,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddHangfireServer();
+// Hangfire
 builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
     .UsePostgreSqlStorage(connectionString));
+builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
 app.UsePathBase("/api");
+
+// Dev exception page (still useful in DEV)
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+// Our middlewares early so they see everything
+app.UseMiddleware<ExceptionHandlingMiddleware>(); // returns ProblemDetails + traceId on 500
+app.UseMiddleware<LogRequest>();                  // logs request/response with correlation id
+
+// Swagger
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -106,31 +131,32 @@ app.UseSwaggerUI(c =>
     c.DisplayRequestDuration();
 });
 
+// Pipeline
 app.UseCors("CorsPolicy");
-
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Hangfire dashboard
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     PrefixPath = string.Empty,
     Authorization = new[] { new HangfireDashboardAuthorizationFilter() }
 });
 
-app.UseMiddleware<UserContextMiddleware>();
-app.UseMiddleware<LogRequest>();
-RecurringJob.AddOrUpdate<StudentsFinishing>("daily-job", x => x.ExecuteAsync(null), Cron.Daily);
-
+// Endpoints
 app.MapControllers();
 
+// Auto-migrate on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ContexRepository>();
     db.Database.Migrate();
 }
 
+// Recurring jobs
+RecurringJob.AddOrUpdate<StudentsFinishing>("daily-job", x => x.ExecuteAsync(null), Cron.Daily);
 
 app.Run();
 
@@ -145,7 +171,6 @@ void RegisterValidations(IServiceCollection services)
 
 void RegisterServices(IServiceCollection services)
 {
-
     services.AddScoped<ICourseService, CourseService>();
     services.AddScoped<IStudentService, StudentService>();
     services.AddScoped<IProjectService, ProjectService>();

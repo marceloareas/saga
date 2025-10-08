@@ -1,6 +1,6 @@
-using System.Linq.Expressions;
+using System;
+using System.Linq;
 using saga.Infrastructure.Providers;
-using saga.Infrastructure.Repositories.Orientation;
 using saga.Models.Entities;
 using saga.Models.Enums;
 
@@ -8,20 +8,34 @@ namespace saga.Infrastructure.Extensions
 {
     public static class OrientationExtensions
     {
-        public static IQueryable<OrientationEntity> FilterByUserRole(this IQueryable<OrientationEntity> query, IUserContext userContext)
+        public static IQueryable<OrientationEntity> FilterByUserRole(
+            this IQueryable<OrientationEntity> query,
+            IUserContext? userContext)
         {
+            if (userContext is null) return query;
+
             switch (userContext.Role)
             {
                 case RolesEnum.Professor:
-                    return query.Where(d => d.ProfessorId == userContext.UserId | d.CoorientatorId == userContext.UserId);
+                    // use logical OR (||), not bitwise |
+                    return query.Where(d => d.ProfessorId == userContext.UserId || d.CoorientatorId == userContext.UserId);
+
                 case RolesEnum.Student:
-                    return query.Where(d => d.StudentId == userContext.UserId);
+                    return userContext.UserId != Guid.Empty
+                        ? query.Where(d => d.StudentId == userContext.UserId)
+                        : query;
+
                 case RolesEnum.Administrator:
                     return query;
+
                 case RolesEnum.ExternalResearcher:
-                    return query.Where(d => d.CoorientatorId == userContext.UserId);
+                    return userContext.UserId != Guid.Empty
+                        ? query.Where(d => d.CoorientatorId == userContext.UserId)
+                        : query;
+
                 default:
-                    return query.Where(d => false);
+                    // Fallback should NOT deny-all; keep it a no-op
+                    return query;
             }
         }
     }

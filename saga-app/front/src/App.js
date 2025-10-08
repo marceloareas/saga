@@ -27,7 +27,7 @@ import ProfessorProfile from './pages/professor/professorProfile';
 
 export default function App() {
   return (
-    <Router basename="saga">
+    <Router basename="/saga">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -59,7 +59,6 @@ export default function App() {
         <Route path="/projects/add" element={<ProjectForm />} />
         <Route path="/projects/:id" element={<ProjectForm Update={true} />} />
         <Route path="/students/:id/extensions/add" element={<ExtensionForm />} />
-
       </Routes>
     </Router>
   );

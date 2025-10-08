@@ -1,16 +1,14 @@
 # Start with the official .NET Core SDK image
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
 
-# Set the working directory to /app
 WORKDIR /app
-
-# Copy the project file and restore dependencies
-COPY *.csproj ./
+COPY *.sln ./
+COPY saga.csproj ./
 RUN dotnet restore
 
 # Copy the entire project and build the app
 COPY . ./
-RUN dotnet publish -c Release -o out
+RUN dotnet publish ./saga.csproj -c Release -o out
  
 # Create the final runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
